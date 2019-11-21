@@ -11,9 +11,9 @@
   "author": "Tobias Assarsson",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@grafana/data": "latest",
-    "@grafana/toolkit": "latest",
-    "@grafana/ui": "latest"
+    "@grafana/data": "^6.4.4",
+    "@grafana/toolkit": "^6.4.4",
+    "@grafana/ui": "^6.4.4"
   },
   "dependencies": {
     "lodash": "^4.17.15"

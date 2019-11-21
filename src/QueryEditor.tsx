@@ -1,9 +1,10 @@
 import defaults from 'lodash/defaults';
 
 import React, { PureComponent, ChangeEvent } from 'react';
-import { Button, FormLabel, Input, QueryEditorProps } from '@grafana/ui';
+import { Button, FormLabel, QueryEditorProps } from '@grafana/ui';
 import { DataSource } from './DataSource';
 import { MyQuery, MyDataSourceOptions, defaultQuery } from './types';
+import { FilterEntry } from "./components/FilterEntry";
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
@@ -11,6 +12,7 @@ interface State {
   installations: any[];
   functions: any[];
 }
+
 
 export class QueryEditor extends PureComponent<Props, State> {
   constructor(props) {
@@ -22,88 +24,63 @@ export class QueryEditor extends PureComponent<Props, State> {
   }
 
   componentDidMount(): void {
-    this.props.datasource.fetchInstalaltions().then(installations => {
-      this.setState({ installations: installations });
+    this.props.datasource.fetchInstallations().then(installations => {
+      this.setState({installations: installations});
       console.log(installations);
     });
   }
 
-  //  onQueryTextChange = (event: ChangeEvent<HTMLInputElement>) => {
-  //    const { onChange, query } = this.props;
-  //    onChange({ ...query, queryText: event.target.value });
-  //  };
-  //
-  //  onConstantChange = (event: ChangeEvent<HTMLInputElement>) => {
-  //    const { onChange, query, onRunQuery } = this.props;
-  //    onChange({ ...query, constant: parseFloat(event.target.value) });
-  //    onRunQuery(); // executes the query
-  //  };
-
   onSelectInstallation = (event: ChangeEvent<HTMLSelectElement>) => {
-    const { onChange, query } = this.props;
-    onChange({ ...query, installationId: Number(event.target.value) });
+    const {onChange, query} = this.props;
+    onChange({...query, installationId: Number(event.target.value)});
     this.props.datasource.fetchFunctions(Number(event.target.value)).then(functions => {
-      this.setState({ functions: functions });
+      this.setState({functions: functions});
     });
   };
 
-  createFilterEntry(e: any) {
-    return (
-      <div>
-        <Input  placeholder={"key"} className={"width-10"} type={"text"} value={e.key} />
-        <Input  placeholder={"value"} className={"width-10"} type={"text"} value={e.value} />
-      </div>
-    );
-//    return <Button title={e.key}>{e.key}</Button>;
-//    return <FormField type={"text"} label={"key"}>hello</FormField>
-  }
+  addFilter = () => {
+    const {onChange, query} = this.props;
+    query.meta.push({key: "a", value: "b"});
+    onChange({...query, meta: query.meta});
+  };
+
+  onMetaDelete = (idx) => {
+    const {onChange, query} = this.props;
+    query.meta = query.meta.filter((value, fidx) => {
+      return idx != fidx;
+    });
+    onChange({...query, meta: query.meta});
+    this.setState({});
+  };
+
+  onMetaUpdate = (idx: number, key: string, value:string) => {
+    const {onChange, query} = this.props;
+    query.meta[idx].key = key;
+    query.meta[idx].value = value;
+    onChange({...query, meta: query.meta});
+    this.setState({});
+  };
 
   render() {
     const query = defaults(this.props.query, defaultQuery) as MyQuery;
     console.log("Current query:", query);
+    console.log("Hello render world");
     return (
-      <div className={'gf-form'}>
-        <div>
-          <FormLabel>Installation</FormLabel>
-          <select onChange={this.onSelectInstallation}>
+      <div>
+        <div className={"gf-form-inline"}>
+          <FormLabel className={"query-keyword"}>Installation</FormLabel>
+          <select onChange={this.onSelectInstallation} style={{width: 330}}>
             {this.state.installations.map(value => {
               let selected = query.installationId == value.id;
               return <option value={value.id} selected={selected}>{value.name}</option>;
             })}
           </select>
         </div>
-        <div>
-          <FormLabel>Filters</FormLabel>
-          {query.meta.map(value => {
-            return this.createFilterEntry(value);
-          })}
-          <Button>+</Button>
-        </div>
+        {query.meta.map((value, idx) => {
+          return <FilterEntry idx={idx} data={value} onDelete={this.onMetaDelete} onUpdate={this.onMetaUpdate}/>
+        })}
+        <Button onClick={this.addFilter}>Add filter</Button>
       </div>
     );
   }
 }
-
-
-
-
-//return (
-//  <div className="gf-form">
-//    <FormLabel>Installation</FormLabel>
-//    <select onChange={this.onSelectInstallation}>
-//      {this.state.installations.map((value) => {
-//        return <option value={value.id}>{value.name}</option>
-//      })}
-//    </select>
-//
-//    <FormLabel>Functions</FormLabel>
-//    <select multiple={true}>
-//      {this.state.functions.map((value) => {
-//        return <option value={value.id}>{value.meta.name}</option>
-//      })}
-//    </select>
-//  </div>
-//);
-
-//        <FormField width={4} value={constant} onChange={this.onConstantChange} label="Constant" type="number" step="0.1"></FormField>
-//        <FormField labelWidth={8} value={queryText || ''} onChange={this.onQueryTextChange} label="Query Text" tooltip="Not used yet"></FormField>

@@ -1,15 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="7c586543-ffe1-4e2d-81c0-2b1d6527842b" name="Default Changelist" comment="" />
+    <list default="true" id="7c586543-ffe1-4e2d-81c0-2b1d6527842b" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/components/FilterEntry.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/DataSource.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/DataSource.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/QueryEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/QueryEditor.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="TypeScript JSX File" />
+        <option value="TypeScript File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="ProjectId" id="1SvWsc9wIHF4oXEm1Sqb6fpmoop" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="PropertiesComponent">
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
@@ -41,7 +62,8 @@
       <workItem from="1572444762512" duration="10866000" />
       <workItem from="1572515396460" duration="9556000" />
       <workItem from="1574254710906" duration="12070000" />
-      <workItem from="1574330384911" duration="818000" />
+      <workItem from="1574330384911" duration="16216000" />
+      <workItem from="1574347184471" duration="7593000" />
     </task>
     <servers />
   </component>
@@ -53,6 +75,19 @@
         <option value="$PROJECT_DIR$/node_modules/@grafana/toolkit/src/plugins/e2e/commonPluginTests.js.map" />
         <option value="$PROJECT_DIR$/node_modules/@grafana/toolkit/src/plugins/e2e/commonPluginTests.js" />
       </list>
+    </option>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
+          </value>
+        </entry>
+      </map>
     </option>
   </component>
 </project>
