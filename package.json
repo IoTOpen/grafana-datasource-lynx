@@ -1,0 +1,21 @@
+{
+  "name": "iotopen-iotopen-datasource",
+  "version": "1.0.0",
+  "description": "Fetch data from IoT Open",
+  "scripts": {
+    "build": "grafana-toolkit plugin:build",
+    "test": "grafana-toolkit plugin:test",
+    "dev": "grafana-toolkit plugin:dev",
+    "watch": "grafana-toolkit plugin:dev --watch"
+  },
+  "author": "Tobias Assarsson",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@grafana/data": "latest",
+    "@grafana/toolkit": "latest",
+    "@grafana/ui": "latest"
+  },
+  "dependencies": {
+    "lodash": "^4.17.15"
+  }
+}

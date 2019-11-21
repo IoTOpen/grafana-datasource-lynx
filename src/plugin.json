@@ -1,0 +1,38 @@
+{
+  "type": "datasource",
+  "name": "iotopen-datasource",
+  "id": "iotopen-iotopen-datasource",
+  "metrics": true,
+  "info": {
+    "description": "Fetch data from IoT Open",
+    "author": {
+      "name": "Tobias Assarsson",
+      "url": "https://iotopen.se"
+    },
+    "keywords": [
+      "iot",
+      "datasource"
+    ],
+    "logos": {
+      "small": "img/logo.png",
+      "large": "img/logo.png"
+    },
+    "links": [
+      {
+        "name": "Website",
+        "url": "https://github.com/grafana/simple-datasource"
+      },
+      {
+        "name": "License",
+        "url": "https://github.com/grafana/simple-datasource/blob/master/LICENSE"
+      }
+    ],
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "dependencies": {
+    "grafanaVersion": "6.4.x",
+    "plugins": []
+  }
+}
