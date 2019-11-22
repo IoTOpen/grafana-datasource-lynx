@@ -4,8 +4,6 @@
     <list default="true" id="7c586543-ffe1-4e2d-81c0-2b1d6527842b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/DataSource.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/DataSource.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/QueryEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/QueryEditor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/types.ts" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -61,7 +59,7 @@
       <workItem from="1574254710906" duration="12070000" />
       <workItem from="1574330384911" duration="16216000" />
       <workItem from="1574347184471" duration="7593000" />
-      <workItem from="1574417339283" duration="2651000" />
+      <workItem from="1574417339283" duration="13393000" />
     </task>
     <servers />
   </component>
