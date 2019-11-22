@@ -23,6 +23,16 @@ export class QueryEditor extends PureComponent<Props, State> {
     };
   }
 
+  getClientIdByInstallation(installationId: number): number {
+    for(let installation of this.state.installations) {
+      if (installation.id == installationId) {
+        console.log("gotit!:", installationId, "==", installation.id, installation.client_id);
+        return installation.client_id;
+      }
+    }
+    return 0;
+  }
+
   componentDidMount(): void {
     this.props.datasource.fetchInstallations().then(installations => {
       this.setState({installations: installations});
@@ -32,7 +42,8 @@ export class QueryEditor extends PureComponent<Props, State> {
 
   onSelectInstallation = (event: ChangeEvent<HTMLSelectElement>) => {
     const {onChange, query} = this.props;
-    onChange({...query, installationId: Number(event.target.value)});
+    let target = Number(event.target.value);
+    onChange({...query, installationId: target, clientId: this.getClientIdByInstallation(target)});
     this.props.datasource.fetchFunctions(Number(event.target.value)).then(functions => {
       this.setState({functions: functions});
     });

@@ -76,7 +76,6 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       });
     });
 
-    console.log("asdf");
     return Promise.resolve({ data });
   }
 

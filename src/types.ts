@@ -2,6 +2,7 @@ import { DataQuery, DataSourceJsonData } from '@grafana/ui';
 
 export interface MyQuery extends DataQuery {
   installationId: number;
+  clientId: number;
   type: string;
   meta: Array<any>;
 }
