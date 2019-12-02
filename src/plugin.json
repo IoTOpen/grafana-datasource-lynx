@@ -1,7 +1,7 @@
 {
   "type": "datasource",
-  "name": "iotopen-datasource",
-  "id": "iotopen-iotopen-datasource",
+  "name": "IoTOpen datasource",
+  "id": "iotopen-datasource",
   "metrics": true,
   "info": {
     "description": "Fetch data from IoT Open",
