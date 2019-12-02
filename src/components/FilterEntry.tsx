@@ -40,7 +40,9 @@ export class FilterEntry extends PureComponent<FilterEntryProps> {
           <Input type={'text'} style={{ width: 150 }} value={this.props.data.key} onChange={this.onChangeKey} />
           <span className={'gf-form-label query-keyword'}>match</span>
           <Input type={'text'} style={{ width: 150 }} value={this.props.data.value} onChange={this.onChangeValue} />
-          <Button variant={'danger'} onClick={this.onDelete}>X</Button>
+          <Button variant={'danger'} onClick={this.onDelete}>
+            X
+          </Button>
         </div>
       </div>
     );

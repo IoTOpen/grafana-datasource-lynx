@@ -43,12 +43,12 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   }
 
   createLogTopicMappings(clientId: number, functions: any[]): Map<string, any[]> {
-    let fmap: Map<string, any[]> = new Map();
+    const fmap: Map<string, any[]> = new Map();
     functions.map(fn => {
       if (fn.meta.topic_read == null) {
         return;
       }
-      let topicRead = String(clientId) + '/' + fn.meta.topic_read;
+      const topicRead = String(clientId) + '/' + fn.meta.topic_read;
       if (fmap[topicRead] != null) {
         fmap[topicRead].push(fn);
       } else {
@@ -60,7 +60,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
   fetchLog(installationId: number, from: number, to: number, topics?: string[]): any {
     const url = this.settings.jsonData.url + '/api/v2beta/log/' + String(installationId);
-    let queryParams = {
+    const queryParams = {
       from: String(from),
       to: String(to),
       order: 'asc',
@@ -68,7 +68,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     if (topics) {
       queryParams['topics'] = topics.join(',');
     }
-    let queryString =
+    const queryString =
       '?' +
       Object.keys(queryParams)
         .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(queryParams[key]))
@@ -77,45 +77,45 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       headers: {
         Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
       },
-    }).then(result => result.json()).then(obj => {
-      return obj;
-    });
+    })
+      .then(result => result.json())
+      .then(obj => {
+        return obj;
+      });
   }
 
   async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
-    const {range} = options;
+    const { range } = options;
     const from = range.from.valueOf();
     const to = range.to.valueOf();
 
-
-    let data = new Array<any>();
-    for (let target of options.targets) {
+    const data = new Array<any>();
+    for (const target of options.targets) {
       const query = defaults(target, defaultQuery);
-      let filteredFunctions = await this.fetchFilteredFunctions(query.installationId, query.meta);
-      let mappings = this.createLogTopicMappings(query.clientId, filteredFunctions);
-      let log = await this.fetchLog(query.installationId, from / 1000, to / 1000, Array.from(mappings.keys()));
+      const filteredFunctions = await this.fetchFilteredFunctions(query.installationId, query.meta);
+      const mappings = this.createLogTopicMappings(query.clientId, filteredFunctions);
+      const log = await this.fetchLog(query.installationId, from / 1000, to / 1000, Array.from(mappings.keys()));
       const res = new MutableDataFrame({
         refId: query.refId,
         fields: [],
       });
-      res.addField({name: 'Time', type: FieldType.time});
-      for (let fn of filteredFunctions) {
+      res.addField({ name: 'Time', type: FieldType.time });
+      for (const fn of filteredFunctions) {
         res.addField({
           name: fn.meta.name,
           type: FieldType.number,
         });
       }
 
-
-      for (let entry of log.data) {
-        let row = new Array<any>();
+      for (const entry of log.data) {
+        const row = new Array<any>();
         row.push(entry.time * 1000);
-        let currentFn = mappings.get(entry.topic);
+        const currentFn = mappings.get(entry.topic);
         if (currentFn == null) {
           continue;
         }
-        for (let fn of filteredFunctions) {
-          if (fn.id == currentFn[0].id) {
+        for (const fn of filteredFunctions) {
+          if (fn.id === currentFn[0].id) {
             row.push(entry.value);
           } else {
             row.push(MISSING_VALUE);
@@ -125,7 +125,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       }
       data.push(res);
     }
-    return Promise.resolve({data});
+    return Promise.resolve({ data });
   }
 
   testDatasource() {
@@ -137,16 +137,16 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         },
       })
         .then(value => {
-          if (value.status != 200) {
+          if (!(value.status === 200)) {
             throw new Error(value.statusText);
           }
           return value.json();
         })
         .then(value => {
-          resolve({status: 'success', message: 'All good!'});
+          resolve({ status: 'success', message: 'All good!' });
         })
         .catch(reason => {
-          reject({status: 'error', message: reason.message});
+          reject({ status: 'error', message: reason.message });
         });
     });
   }

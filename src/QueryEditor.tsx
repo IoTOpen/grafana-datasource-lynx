@@ -23,8 +23,8 @@ export class QueryEditor extends PureComponent<Props, State> {
   }
 
   getClientIdByInstallation(installationId: number): number {
-    for (let installation of this.state.installations) {
-      if (installation.id == installationId) {
+    for (const installation of this.state.installations) {
+      if (installation.id === installationId) {
         return installation.client_id;
       }
     }
@@ -39,7 +39,7 @@ export class QueryEditor extends PureComponent<Props, State> {
 
   onSelectInstallation = (event: ChangeEvent<HTMLSelectElement>) => {
     const { onChange, query } = this.props;
-    let target = Number(event.target.value);
+    const target = Number(event.target.value);
     onChange({ ...query, installationId: target, clientId: this.getClientIdByInstallation(target) });
     this.props.datasource.fetchFunctions(Number(event.target.value)).then(functions => {
       this.setState({ functions: functions });
@@ -55,7 +55,7 @@ export class QueryEditor extends PureComponent<Props, State> {
   onMetaDelete = idx => {
     const { onChange, query } = this.props;
     query.meta = query.meta.filter((value, fidx) => {
-      return idx != fidx;
+      return !(idx === fidx);
     });
     onChange({ ...query, meta: query.meta });
     this.setState({});
@@ -77,7 +77,7 @@ export class QueryEditor extends PureComponent<Props, State> {
           <FormLabel className={'query-keyword'}>Installation</FormLabel>
           <select onChange={this.onSelectInstallation} style={{ width: 330 }}>
             {this.state.installations.map(value => {
-              let selected = query.installationId == value.id;
+              const selected = query.installationId === value.id;
               return (
                 <option value={value.id} selected={selected}>
                   {value.name}
