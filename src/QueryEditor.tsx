@@ -76,6 +76,7 @@ export class QueryEditor extends PureComponent<Props, State> {
         <div className={'gf-form-inline'}>
           <FormLabel className={'query-keyword'}>Installation</FormLabel>
           <select onChange={this.onSelectInstallation} style={{ width: 330 }}>
+            <option value={0}>Select installation</option>
             {this.state.installations.map(value => {
               const selected = query.installationId === value.id;
               return (
