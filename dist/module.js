@@ -1,4 +1,4 @@
-define(["@grafana/data","@grafana/ui","react"], function(__WEBPACK_EXTERNAL_MODULE__grafana_data__, __WEBPACK_EXTERNAL_MODULE__grafana_ui__, __WEBPACK_EXTERNAL_MODULE_react__) { return /******/ (function(modules) { // webpackBootstrap
+define(["@grafana/ui","react"], function(__WEBPACK_EXTERNAL_MODULE__grafana_ui__, __WEBPACK_EXTERNAL_MODULE_react__) { return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
@@ -2190,16 +2190,8 @@ function (_super) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DataSource", function() { return DataSource; });
 /* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "../node_modules/tslib/tslib.es6.js");
-/* harmony import */ var lodash_defaults__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! lodash/defaults */ "../node_modules/lodash/defaults.js");
-/* harmony import */ var lodash_defaults__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(lodash_defaults__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _grafana_ui__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @grafana/ui */ "@grafana/ui");
-/* harmony import */ var _grafana_ui__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_grafana_ui__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _types__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./types */ "./types.ts");
-/* harmony import */ var _grafana_data__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @grafana/data */ "@grafana/data");
-/* harmony import */ var _grafana_data__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_grafana_data__WEBPACK_IMPORTED_MODULE_4__);
-
-
-
+/* harmony import */ var _grafana_ui__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @grafana/ui */ "@grafana/ui");
+/* harmony import */ var _grafana_ui__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_grafana_ui__WEBPACK_IMPORTED_MODULE_1__);
 
 
 
@@ -2251,11 +2243,11 @@ function (_super) {
   DataSource.prototype.createLogTopicMappings = function (clientId, functions) {
     var fmap = new Map();
     functions.map(function (fn) {
-      if (fn.meta.topic_read == null) {
+      if (fn.meta['topic_read'] === null) {
         return;
       }
 
-      var topicRead = String(clientId) + '/' + fn.meta.topic_read;
+      var topicRead = String(clientId) + '/' + fn.meta['topic_read'];
 
       if (fmap[topicRead] != null) {
         fmap[topicRead].push(fn);
@@ -2267,7 +2259,7 @@ function (_super) {
   };
 
   DataSource.prototype.fetchLog = function (installationId, from, to, topics) {
-    var url = this.settings.jsonData.url + '/api/v2beta/log/' + String(installationId);
+    var url = this.settings.jsonData.url + '/api/v3beta/log/' + String(installationId);
     var queryParams = {
       from: String(from),
       to: String(to),
@@ -2294,60 +2286,81 @@ function (_super) {
 
   DataSource.prototype.query = function (options) {
     return tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"](this, void 0, void 0, function () {
-      var range, from, to, data, _a, _b, target, query, filteredFunctions, mappings, log, res, filteredFunctions_1, filteredFunctions_1_1, fn, _c, _d, entry, row, currentFn, filteredFunctions_2, filteredFunctions_2_1, fn, e_1_1;
+      var range, from, to, targets, seriesList, targets_1, targets_1_1, target, targetDatapoints, functions, mappings, logResult, _a, _b, logEntry, matchingFunctions, matchingFunctions_1, matchingFunctions_1_1, matchingFunction, name_1, dps, e_1_1;
 
-      var e_1, _e, e_2, _f, e_3, _g, e_4, _h;
+      var e_1, _c, e_2, _d, e_3, _e;
 
-      return tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"](this, function (_j) {
-        switch (_j.label) {
+      return tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"](this, function (_f) {
+        switch (_f.label) {
           case 0:
             range = options.range;
             from = range.from.valueOf();
             to = range.to.valueOf();
-            data = new Array();
-            _j.label = 1;
+            targets = options.targets.filter(function (target) {
+              return !target.hide;
+            });
+            seriesList = [];
+            _f.label = 1;
 
           case 1:
-            _j.trys.push([1, 7, 8, 9]);
+            _f.trys.push([1, 7, 8, 9]);
 
-            _a = tslib__WEBPACK_IMPORTED_MODULE_0__["__values"](options.targets), _b = _a.next();
-            _j.label = 2;
+            targets_1 = tslib__WEBPACK_IMPORTED_MODULE_0__["__values"](targets), targets_1_1 = targets_1.next();
+            _f.label = 2;
 
           case 2:
-            if (!!_b.done) return [3
+            if (!!targets_1_1.done) return [3
             /*break*/
             , 6];
-            target = _b.value;
-            query = lodash_defaults__WEBPACK_IMPORTED_MODULE_1___default()(target, _types__WEBPACK_IMPORTED_MODULE_3__["defaultQuery"]);
+            target = targets_1_1.value;
+            targetDatapoints = new Map();
             return [4
             /*yield*/
-            , this.fetchFilteredFunctions(query.installationId, query.meta)];
+            , this.fetchFilteredFunctions(target.installationId, target.meta)];
 
           case 3:
-            filteredFunctions = _j.sent();
-            mappings = this.createLogTopicMappings(query.clientId, filteredFunctions);
+            functions = _f.sent();
+            mappings = this.createLogTopicMappings(target.clientId, functions);
             return [4
             /*yield*/
-            , this.fetchLog(query.installationId, from / 1000, to / 1000, Array.from(mappings.keys()))];
+            , this.fetchLog(target.installationId, from / 1000, to / 1000, Array.from(mappings.keys()))];
 
           case 4:
-            log = _j.sent();
-            res = new _grafana_data__WEBPACK_IMPORTED_MODULE_4__["MutableDataFrame"]({
-              refId: query.refId,
-              fields: []
-            });
-            res.addField({
-              name: 'Time',
-              type: _grafana_data__WEBPACK_IMPORTED_MODULE_4__["FieldType"].time
-            });
+            logResult = _f.sent();
 
             try {
-              for (filteredFunctions_1 = (e_2 = void 0, tslib__WEBPACK_IMPORTED_MODULE_0__["__values"](filteredFunctions)), filteredFunctions_1_1 = filteredFunctions_1.next(); !filteredFunctions_1_1.done; filteredFunctions_1_1 = filteredFunctions_1.next()) {
-                fn = filteredFunctions_1_1.value;
-                res.addField({
-                  name: fn.meta.name,
-                  type: _grafana_data__WEBPACK_IMPORTED_MODULE_4__["FieldType"].number
-                });
+              for (_a = (e_2 = void 0, tslib__WEBPACK_IMPORTED_MODULE_0__["__values"](logResult.data)), _b = _a.next(); !_b.done; _b = _a.next()) {
+                logEntry = _b.value;
+                matchingFunctions = mappings.get(logEntry.topic);
+
+                if (matchingFunctions === undefined) {
+                  continue;
+                }
+
+                try {
+                  for (matchingFunctions_1 = (e_3 = void 0, tslib__WEBPACK_IMPORTED_MODULE_0__["__values"](matchingFunctions)), matchingFunctions_1_1 = matchingFunctions_1.next(); !matchingFunctions_1_1.done; matchingFunctions_1_1 = matchingFunctions_1.next()) {
+                    matchingFunction = matchingFunctions_1_1.value;
+                    name_1 = matchingFunction.meta['name'];
+                    dps = targetDatapoints.get(name_1);
+
+                    if (dps === undefined) {
+                      dps = [];
+                      targetDatapoints.set(name_1, dps);
+                    }
+
+                    dps.push([logEntry.value, logEntry.timestamp * 1000]);
+                  }
+                } catch (e_3_1) {
+                  e_3 = {
+                    error: e_3_1
+                  };
+                } finally {
+                  try {
+                    if (matchingFunctions_1_1 && !matchingFunctions_1_1.done && (_e = matchingFunctions_1["return"])) _e.call(matchingFunctions_1);
+                  } finally {
+                    if (e_3) throw e_3.error;
+                  }
+                }
               }
             } catch (e_2_1) {
               e_2 = {
@@ -2355,64 +2368,24 @@ function (_super) {
               };
             } finally {
               try {
-                if (filteredFunctions_1_1 && !filteredFunctions_1_1.done && (_f = filteredFunctions_1["return"])) _f.call(filteredFunctions_1);
+                if (_b && !_b.done && (_d = _a["return"])) _d.call(_a);
               } finally {
                 if (e_2) throw e_2.error;
               }
             }
 
-            try {
-              for (_c = (e_3 = void 0, tslib__WEBPACK_IMPORTED_MODULE_0__["__values"](log.data)), _d = _c.next(); !_d.done; _d = _c.next()) {
-                entry = _d.value;
-                row = new Array();
-                row.push(entry.time * 1000);
-                currentFn = mappings.get(entry.topic);
-
-                if (currentFn == null) {
-                  continue;
-                }
-
-                try {
-                  for (filteredFunctions_2 = (e_4 = void 0, tslib__WEBPACK_IMPORTED_MODULE_0__["__values"](filteredFunctions)), filteredFunctions_2_1 = filteredFunctions_2.next(); !filteredFunctions_2_1.done; filteredFunctions_2_1 = filteredFunctions_2.next()) {
-                    fn = filteredFunctions_2_1.value;
-
-                    if (fn.id === currentFn[0].id) {
-                      row.push(entry.value);
-                    } else {
-                      row.push(_grafana_data__WEBPACK_IMPORTED_MODULE_4__["MISSING_VALUE"]);
-                    }
-                  }
-                } catch (e_4_1) {
-                  e_4 = {
-                    error: e_4_1
-                  };
-                } finally {
-                  try {
-                    if (filteredFunctions_2_1 && !filteredFunctions_2_1.done && (_h = filteredFunctions_2["return"])) _h.call(filteredFunctions_2);
-                  } finally {
-                    if (e_4) throw e_4.error;
-                  }
-                }
-
-                res.appendRow(row);
-              }
-            } catch (e_3_1) {
-              e_3 = {
-                error: e_3_1
+            targetDatapoints.forEach(function (value, key) {
+              var dp = {
+                target: key,
+                datapoints: value
               };
-            } finally {
-              try {
-                if (_d && !_d.done && (_g = _c["return"])) _g.call(_c);
-              } finally {
-                if (e_3) throw e_3.error;
-              }
-            }
-
-            data.push(res);
-            _j.label = 5;
+              console.log(dp);
+              seriesList.push(dp);
+            });
+            _f.label = 5;
 
           case 5:
-            _b = _a.next();
+            targets_1_1 = targets_1.next();
             return [3
             /*break*/
             , 2];
@@ -2423,7 +2396,7 @@ function (_super) {
             , 9];
 
           case 7:
-            e_1_1 = _j.sent();
+            e_1_1 = _f.sent();
             e_1 = {
               error: e_1_1
             };
@@ -2433,7 +2406,7 @@ function (_super) {
 
           case 8:
             try {
-              if (_b && !_b.done && (_e = _a["return"])) _e.call(_a);
+              if (targets_1_1 && !targets_1_1.done && (_c = targets_1["return"])) _c.call(targets_1);
             } finally {
               if (e_1) throw e_1.error;
             }
@@ -2445,9 +2418,9 @@ function (_super) {
           case 9:
             return [2
             /*return*/
-            , Promise.resolve({
-              data: data
-            })];
+            , {
+              data: seriesList
+            }];
         }
       });
     });
@@ -2483,7 +2456,7 @@ function (_super) {
   };
 
   return DataSource;
-}(_grafana_ui__WEBPACK_IMPORTED_MODULE_2__["DataSourceApi"]);
+}(_grafana_ui__WEBPACK_IMPORTED_MODULE_1__["DataSourceApi"]);
 
 
 
@@ -2786,17 +2759,6 @@ var defaultQuery = {
     value: ''
   }]
 };
-
-/***/ }),
-
-/***/ "@grafana/data":
-/*!********************************!*\
-  !*** external "@grafana/data" ***!
-  \********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE__grafana_data__;
 
 /***/ }),
 

@@ -1,9 +1,6 @@
-import defaults from 'lodash/defaults';
+import { DataQueryRequest, DataSourceApi, DataSourceInstanceSettings } from '@grafana/ui';
 
-import { DataQueryRequest, DataQueryResponse, DataSourceApi, DataSourceInstanceSettings } from '@grafana/ui';
-
-import { defaultQuery, MyDataSourceOptions, MyQuery } from './types';
-import { FieldType, MISSING_VALUE, MutableDataFrame } from '@grafana/data';
+import { FunctionX, LogResult, MyDataSourceOptions, MyQuery } from './types';
 
 export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   private settings: DataSourceInstanceSettings<MyDataSourceOptions>;
@@ -29,7 +26,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     }).then(result => result.json());
   }
 
-  fetchFilteredFunctions(installationId: number, filter: any): Promise<any> {
+  fetchFilteredFunctions(installationId: number, filter: any): Promise<FunctionX[]> {
     const queryParams = filter
       .map(entry => {
         return encodeURIComponent(entry.key) + '=' + encodeURIComponent(entry.value);
@@ -42,13 +39,13 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     }).then(result => result.json());
   }
 
-  createLogTopicMappings(clientId: number, functions: any[]): Map<string, any[]> {
-    const fmap: Map<string, any[]> = new Map();
+  createLogTopicMappings(clientId: number, functions: FunctionX[]): Map<string, FunctionX[]> {
+    const fmap: Map<string, FunctionX[]> = new Map();
     functions.map(fn => {
-      if (fn.meta.topic_read == null) {
+      if (fn.meta['topic_read'] === null) {
         return;
       }
-      const topicRead = String(clientId) + '/' + fn.meta.topic_read;
+      const topicRead = String(clientId) + '/' + fn.meta['topic_read'];
       if (fmap[topicRead] != null) {
         fmap[topicRead].push(fn);
       } else {
@@ -58,7 +55,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     return fmap;
   }
 
-  fetchLog(installationId: number, from: number, to: number, topics?: string[]): any {
+  fetchLog(installationId: number, from: number, to: number, topics?: string[]): Promise<LogResult> {
     const url = this.settings.jsonData.url + '/api/v3beta/log/' + String(installationId);
     const queryParams = {
       from: String(from),
@@ -80,52 +77,46 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     })
       .then(result => result.json())
       .then(obj => {
-        return obj;
+        return <LogResult>obj;
       });
   }
 
-  async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
+  async query(options: DataQueryRequest<MyQuery>) {
     const { range } = options;
     const from = range.from.valueOf();
     const to = range.to.valueOf();
+    const targets = options.targets.filter(target => !target.hide);
 
-    const data = new Array<any>();
-    for (const target of options.targets) {
-      const query = defaults(target, defaultQuery);
-      const filteredFunctions = await this.fetchFilteredFunctions(query.installationId, query.meta);
-      const mappings = this.createLogTopicMappings(query.clientId, filteredFunctions);
-      const log = await this.fetchLog(query.installationId, from / 1000, to / 1000, Array.from(mappings.keys()));
-      const res = new MutableDataFrame({
-        refId: query.refId,
-        fields: [],
-      });
-      res.addField({ name: 'Time', type: FieldType.time });
-      for (const fn of filteredFunctions) {
-        res.addField({
-          name: fn.meta.name,
-          type: FieldType.number,
-        });
-      }
+    const seriesList: any[] = [];
 
-      for (const entry of log.data) {
-        const row = new Array<any>();
-        row.push(entry.time * 1000);
-        const currentFn = mappings.get(entry.topic);
-        if (currentFn == null) {
+    for (const target of targets) {
+      let targetDatapoints = new Map<string, any[]>();
+
+      const functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
+      const mappings = this.createLogTopicMappings(target.clientId, functions);
+      const logResult = await this.fetchLog(target.installationId, from / 1000, to / 1000, Array.from(mappings.keys()));
+      for (const logEntry of logResult.data) {
+        const matchingFunctions = mappings.get(logEntry.topic);
+        if (matchingFunctions === undefined) {
           continue;
         }
-        for (const fn of filteredFunctions) {
-          if (fn.id === currentFn[0].id) {
-            row.push(entry.value);
-          } else {
-            row.push(MISSING_VALUE);
+        for (const matchingFunction of matchingFunctions) {
+          const name = matchingFunction.meta['name'];
+          let dps = targetDatapoints.get(name);
+          if (dps === undefined) {
+            dps = [];
+            targetDatapoints.set(name, dps);
           }
+          dps.push([logEntry.value, logEntry.timestamp * 1000]);
         }
-        res.appendRow(row);
       }
-      data.push(res);
+      targetDatapoints.forEach((value, key) => {
+        const dp = { target: key, datapoints: value };
+        console.log(dp);
+        seriesList.push(dp);
+      });
     }
-    return Promise.resolve({ data });
+    return { data: seriesList };
   }
 
   testDatasource() {
