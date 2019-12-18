@@ -59,7 +59,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   }
 
   fetchLog(installationId: number, from: number, to: number, topics?: string[]): any {
-    const url = this.settings.jsonData.url + '/api/v2beta/log/' + String(installationId);
+    const url = this.settings.jsonData.url + '/api/v3beta/log/' + String(installationId);
     const queryParams = {
       from: String(from),
       to: String(to),
