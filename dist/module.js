@@ -2356,7 +2356,7 @@ function (_super) {
             try {
               for (_a = (e_2 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(logResult.data)), _b = _a.next(); !_b.done; _b = _a.next()) {
                 logEntry = _b.value;
-                matchingFunctions = mappings.get(String(target.clientId) + '/' + logEntry.topic);
+                matchingFunctions = mappings.get(logEntry.topic);
 
                 if (matchingFunctions === undefined) {
                   continue;
