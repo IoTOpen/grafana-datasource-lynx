@@ -1,8 +1,6 @@
-import defaults from 'lodash/defaults';
-
 import React, { PureComponent, ChangeEvent } from 'react';
 import { DataSource } from './DataSource';
-import { MyQuery, MyDataSourceOptions, defaultQuery } from './types';
+import { MyQuery, MyDataSourceOptions } from './types';
 import { FilterEntry } from './components/FilterEntry';
 import { QueryEditorProps } from '@grafana/data';
 import { Button, FormLabel } from '@grafana/ui';
@@ -59,7 +57,6 @@ export class QueryEditor extends PureComponent<Props, State> {
       return !(idx === fidx);
     });
     onChange({ ...query, meta: query.meta });
-    this.setState({});
   };
 
   onMetaUpdate = (idx: number, key: string, value: string) => {
@@ -67,11 +64,15 @@ export class QueryEditor extends PureComponent<Props, State> {
     query.meta[idx].key = key;
     query.meta[idx].value = value;
     onChange({ ...query, meta: query.meta });
-    this.setState({});
   };
 
   render() {
-    const query = defaults(this.props.query, defaultQuery) as MyQuery;
+    const query = this.props.query as MyQuery;
+    console.log(query);
+    if (query.meta == null) {
+      query.meta = [{ key: 'type', value: '' }];
+    }
+
     return (
       <div>
         <div className={'gf-form-inline'}>

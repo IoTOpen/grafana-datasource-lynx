@@ -9,6 +9,7 @@ export interface MyQuery extends DataQuery {
 
 export const defaultQuery: Partial<MyQuery> = {
   installationId: 0,
+  clientId: 0,
   type: '',
   meta: [{ key: 'type', value: '' }],
 };
