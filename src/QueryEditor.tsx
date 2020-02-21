@@ -68,7 +68,6 @@ export class QueryEditor extends PureComponent<Props, State> {
 
   render() {
     const query = this.props.query as MyQuery;
-    console.log(query);
     if (query.meta == null) {
       query.meta = [{ key: 'type', value: '' }];
     }
