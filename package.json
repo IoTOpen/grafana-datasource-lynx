@@ -8,7 +8,7 @@
     "dev": "grafana-toolkit plugin:dev",
     "watch": "grafana-toolkit plugin:dev --watch"
   },
-  "author": "Tobias Assarsson",
+  "author": "IoTOpen",
   "license": "Apache-2.0",
   "devDependencies": {
     "@grafana/data": "^6.4.4",
