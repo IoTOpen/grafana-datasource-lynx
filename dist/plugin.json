@@ -6,7 +6,7 @@
   "info": {
     "description": "Fetch data from IoT Open",
     "author": {
-      "name": "Tobias Assarsson",
+      "name": "IoTOpen",
       "url": "https://iotopen.se"
     },
     "keywords": [
@@ -20,15 +20,11 @@
     "links": [
       {
         "name": "Website",
-        "url": "https://github.com/grafana/simple-datasource"
-      },
-      {
-        "name": "License",
-        "url": "https://github.com/grafana/simple-datasource/blob/master/LICENSE"
+        "url": "https://iotopen.se"
       }
     ],
     "screenshots": [],
-    "version": "1.0.0",
+    "version": "1.0.1",
     "updated": "2020-02-21"
   },
   "dependencies": {
