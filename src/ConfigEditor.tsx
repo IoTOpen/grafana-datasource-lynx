@@ -1,14 +1,12 @@
 import React, { PureComponent, ChangeEvent } from 'react';
-import { DataSourcePluginOptionsEditorProps, DataSourceSettings, FormField } from '@grafana/ui';
 import { MyDataSourceOptions } from './types';
+import { FormField } from '@grafana/ui';
+import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
 
-type Settings = DataSourceSettings<MyDataSourceOptions>;
-
-interface Props extends DataSourcePluginOptionsEditorProps<Settings> {}
-
+interface MyProps extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> {}
 interface State {}
 
-export class ConfigEditor extends PureComponent<Props, State> {
+export class ConfigEditor extends PureComponent<MyProps, State> {
   componentDidMount() {}
 
   onAPIKeyChange = (event: ChangeEvent<HTMLInputElement>) => {

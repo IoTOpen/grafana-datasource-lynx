@@ -1,6 +1,5 @@
-import { DataQueryRequest, DataSourceApi, DataSourceInstanceSettings } from '@grafana/ui';
-
 import { FunctionX, LogResult, MyDataSourceOptions, MyQuery } from './types';
+import { DataQueryRequest, DataSourceApi, DataSourceInstanceSettings, DefaultTimeRange } from '@grafana/data';
 
 export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   private settings: DataSourceInstanceSettings<MyDataSourceOptions>;
@@ -45,6 +44,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       if (fn.meta['topic_read'] === null) {
         return;
       }
+      //const topicRead = String(clientId) + '/' + fn.meta['topic_read'];
       const topicRead = String(clientId) + '/' + fn.meta['topic_read'];
       if (fmap[topicRead] != null) {
         fmap[topicRead].push(fn);
@@ -77,12 +77,15 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     })
       .then(result => result.json())
       .then(obj => {
-        return <LogResult>obj;
+        return obj as LogResult;
       });
   }
 
   async query(options: DataQueryRequest<MyQuery>) {
-    const { range } = options;
+    let { range } = options;
+    if (range == null) {
+      range = DefaultTimeRange;
+    }
     const from = range.from.valueOf();
     const to = range.to.valueOf();
     const targets = options.targets.filter(target => !target.hide);
@@ -90,13 +93,13 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     const seriesList: any[] = [];
 
     for (const target of targets) {
-      let targetDatapoints = new Map<string, any[]>();
+      const targetDatapoints = new Map<string, any[]>();
 
       const functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
       const mappings = this.createLogTopicMappings(target.clientId, functions);
       const logResult = await this.fetchLog(target.installationId, from / 1000, to / 1000, Array.from(mappings.keys()));
       for (const logEntry of logResult.data) {
-        const matchingFunctions = mappings.get(logEntry.topic);
+        const matchingFunctions = mappings.get(String(target.clientId) + '/' + logEntry.topic);
         if (matchingFunctions === undefined) {
           continue;
         }
@@ -116,7 +119,10 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         seriesList.push(dp);
       });
     }
-    return { data: seriesList };
+
+    return {
+      data: seriesList,
+    };
   }
 
   testDatasource() {

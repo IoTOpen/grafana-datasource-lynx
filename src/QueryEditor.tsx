@@ -1,10 +1,11 @@
 import defaults from 'lodash/defaults';
 
 import React, { PureComponent, ChangeEvent } from 'react';
-import { Button, FormLabel, QueryEditorProps } from '@grafana/ui';
 import { DataSource } from './DataSource';
 import { MyQuery, MyDataSourceOptions, defaultQuery } from './types';
 import { FilterEntry } from './components/FilterEntry';
+import { QueryEditorProps } from '@grafana/data';
+import { Button, FormLabel } from '@grafana/ui';
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
