@@ -55,11 +55,12 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     return fmap;
   }
 
-  fetchLog(installationId: number, from: number, to: number, topics?: string[]): Promise<LogResult> {
+  fetchLog(installationId: number, from: number, to: number, offset: number, topics?: string[]): Promise<LogResult> {
     const url = this.settings.jsonData.url + '/api/v3beta/log/' + String(installationId);
     const queryParams = {
       from: String(from),
       to: String(to),
+      offset: String(offset),
       order: 'asc',
     };
     if (topics) {
@@ -94,30 +95,43 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
     for (const target of targets) {
       const targetDatapoints = new Map<string, number[][]>();
-
       const functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
       const mappings = this.createLogTopicMappings(target.clientId, functions);
-      const logResult = await this.fetchLog(target.installationId, from / 1000, to / 1000, Array.from(mappings.keys()));
-      for (const logEntry of logResult.data) {
-        const matchingFunctions = mappings.get(logEntry.topic);
-        if (matchingFunctions === undefined) {
-          continue;
-        }
-        for (const matchingFunction of matchingFunctions) {
-          const name = matchingFunction.meta['name'];
-          let dps = targetDatapoints.get(name);
-          if (dps === undefined) {
-            dps = [];
-            targetDatapoints.set(name, dps);
-          }
-          dps.push([logEntry.value, logEntry.timestamp * 1000]);
+      const topics = Array.from(mappings.keys());
+
+      const results = new Array<LogResult>();
+      let offset = 0;
+      while (true) {
+        const logResult = await this.fetchLog(target.installationId, from / 1000, to / 1000, offset, topics);
+        results.push(logResult);
+        offset += logResult.count;
+        if (offset >= logResult.total) {
+          break;
         }
       }
-      targetDatapoints.forEach((value, key) => {
-        const dp = { target: key, datapoints: value };
-        console.log(dp);
-        seriesList.push(dp);
-      });
+
+      for (const logResult of results) {
+        for (const logEntry of logResult.data) {
+          const matchingFunctions = mappings.get(logEntry.topic);
+          if (matchingFunctions === undefined) {
+            continue;
+          }
+          for (const matchingFunction of matchingFunctions) {
+            const name = matchingFunction.meta['name'];
+            let dps = targetDatapoints.get(name);
+            if (dps === undefined) {
+              dps = [];
+              targetDatapoints.set(name, dps);
+            }
+            dps.push([logEntry.value, logEntry.timestamp * 1000]);
+          }
+        }
+        targetDatapoints.forEach((value, key) => {
+          const dp = { target: key, datapoints: value };
+          console.log(dp);
+          seriesList.push(dp);
+        });
+      }
     }
 
     return {

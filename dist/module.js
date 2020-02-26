@@ -507,11 +507,12 @@ function (_super) {
     return fmap;
   };
 
-  DataSource.prototype.fetchLog = function (installationId, from, to, topics) {
+  DataSource.prototype.fetchLog = function (installationId, from, to, offset, topics) {
     var url = this.settings.jsonData.url + '/api/v3beta/log/' + String(installationId);
     var queryParams = {
       from: String(from),
       to: String(to),
+      offset: String(offset),
       order: 'asc'
     };
 
@@ -535,12 +536,12 @@ function (_super) {
 
   DataSource.prototype.query = function (options) {
     return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
-      var range, from, to, targets, seriesList, targets_1, targets_1_1, target, targetDatapoints, functions, mappings, logResult, _a, _b, logEntry, matchingFunctions, matchingFunctions_1, matchingFunctions_1_1, matchingFunction, name_1, dps, e_1_1;
+      var range, from, to, targets, seriesList, targets_1, targets_1_1, target, targetDatapoints, functions, mappings, topics, results, offset, logResult, results_1, results_1_1, logResult, _a, _b, logEntry, matchingFunctions, matchingFunctions_1, matchingFunctions_1_1, matchingFunction, name_1, dps, e_1_1;
 
-      var e_1, _c, e_2, _d, e_3, _e;
+      var e_1, _c, e_2, _d, e_3, _e, e_4, _f;
 
-      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_f) {
-        switch (_f.label) {
+      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_g) {
+        switch (_g.label) {
           case 0:
             range = options.range;
 
@@ -554,18 +555,18 @@ function (_super) {
               return !target.hide;
             });
             seriesList = [];
-            _f.label = 1;
+            _g.label = 1;
 
           case 1:
-            _f.trys.push([1, 7, 8, 9]);
+            _g.trys.push([1, 9, 10, 11]);
 
             targets_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(targets), targets_1_1 = targets_1.next();
-            _f.label = 2;
+            _g.label = 2;
 
           case 2:
             if (!!targets_1_1.done) return [3
             /*break*/
-            , 6];
+            , 8];
             target = targets_1_1.value;
             targetDatapoints = new Map();
             return [4
@@ -573,36 +574,72 @@ function (_super) {
             , this.fetchFilteredFunctions(target.installationId, target.meta)];
 
           case 3:
-            functions = _f.sent();
+            functions = _g.sent();
             mappings = this.createLogTopicMappings(target.clientId, functions);
-            return [4
-            /*yield*/
-            , this.fetchLog(target.installationId, from / 1000, to / 1000, Array.from(mappings.keys()))];
+            topics = Array.from(mappings.keys());
+            results = new Array();
+            offset = 0;
+            _g.label = 4;
 
           case 4:
-            logResult = _f.sent();
+            if (false) {}
+            return [4
+            /*yield*/
+            , this.fetchLog(target.installationId, from / 1000, to / 1000, offset, topics)];
 
+          case 5:
+            logResult = _g.sent();
+            results.push(logResult);
+            offset += logResult.count;
+
+            if (offset >= logResult.total) {
+              return [3
+              /*break*/
+              , 6];
+            }
+
+            return [3
+            /*break*/
+            , 4];
+
+          case 6:
             try {
-              for (_a = (e_2 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(logResult.data)), _b = _a.next(); !_b.done; _b = _a.next()) {
-                logEntry = _b.value;
-                matchingFunctions = mappings.get(logEntry.topic);
-
-                if (matchingFunctions === undefined) {
-                  continue;
-                }
+              for (results_1 = (e_2 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(results)), results_1_1 = results_1.next(); !results_1_1.done; results_1_1 = results_1.next()) {
+                logResult = results_1_1.value;
 
                 try {
-                  for (matchingFunctions_1 = (e_3 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(matchingFunctions)), matchingFunctions_1_1 = matchingFunctions_1.next(); !matchingFunctions_1_1.done; matchingFunctions_1_1 = matchingFunctions_1.next()) {
-                    matchingFunction = matchingFunctions_1_1.value;
-                    name_1 = matchingFunction.meta['name'];
-                    dps = targetDatapoints.get(name_1);
+                  for (_a = (e_3 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(logResult.data)), _b = _a.next(); !_b.done; _b = _a.next()) {
+                    logEntry = _b.value;
+                    matchingFunctions = mappings.get(logEntry.topic);
 
-                    if (dps === undefined) {
-                      dps = [];
-                      targetDatapoints.set(name_1, dps);
+                    if (matchingFunctions === undefined) {
+                      continue;
                     }
 
-                    dps.push([logEntry.value, logEntry.timestamp * 1000]);
+                    try {
+                      for (matchingFunctions_1 = (e_4 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(matchingFunctions)), matchingFunctions_1_1 = matchingFunctions_1.next(); !matchingFunctions_1_1.done; matchingFunctions_1_1 = matchingFunctions_1.next()) {
+                        matchingFunction = matchingFunctions_1_1.value;
+                        name_1 = matchingFunction.meta['name'];
+                        dps = targetDatapoints.get(name_1);
+
+                        if (dps === undefined) {
+                          dps = [];
+                          targetDatapoints.set(name_1, dps);
+                        }
+
+                        dps.push([logEntry.value, logEntry.timestamp * 1000]);
+                      }
+                    } catch (e_4_1) {
+                      e_4 = {
+                        error: e_4_1
+                      };
+                    } finally {
+                      try {
+                        if (matchingFunctions_1_1 && !matchingFunctions_1_1.done && (_f = matchingFunctions_1["return"])) _f.call(matchingFunctions_1);
+                      } finally {
+                        if (e_4) throw e_4.error;
+                      }
+                    }
                   }
                 } catch (e_3_1) {
                   e_3 = {
@@ -610,11 +647,20 @@ function (_super) {
                   };
                 } finally {
                   try {
-                    if (matchingFunctions_1_1 && !matchingFunctions_1_1.done && (_e = matchingFunctions_1["return"])) _e.call(matchingFunctions_1);
+                    if (_b && !_b.done && (_e = _a["return"])) _e.call(_a);
                   } finally {
                     if (e_3) throw e_3.error;
                   }
                 }
+
+                targetDatapoints.forEach(function (value, key) {
+                  var dp = {
+                    target: key,
+                    datapoints: value
+                  };
+                  console.log(dp);
+                  seriesList.push(dp);
+                });
               }
             } catch (e_2_1) {
               e_2 = {
@@ -622,43 +668,35 @@ function (_super) {
               };
             } finally {
               try {
-                if (_b && !_b.done && (_d = _a["return"])) _d.call(_a);
+                if (results_1_1 && !results_1_1.done && (_d = results_1["return"])) _d.call(results_1);
               } finally {
                 if (e_2) throw e_2.error;
               }
             }
 
-            targetDatapoints.forEach(function (value, key) {
-              var dp = {
-                target: key,
-                datapoints: value
-              };
-              console.log(dp);
-              seriesList.push(dp);
-            });
-            _f.label = 5;
+            _g.label = 7;
 
-          case 5:
+          case 7:
             targets_1_1 = targets_1.next();
             return [3
             /*break*/
             , 2];
 
-          case 6:
+          case 8:
             return [3
             /*break*/
-            , 9];
+            , 11];
 
-          case 7:
-            e_1_1 = _f.sent();
+          case 9:
+            e_1_1 = _g.sent();
             e_1 = {
               error: e_1_1
             };
             return [3
             /*break*/
-            , 9];
+            , 11];
 
-          case 8:
+          case 10:
             try {
               if (targets_1_1 && !targets_1_1.done && (_c = targets_1["return"])) _c.call(targets_1);
             } finally {
@@ -669,7 +707,7 @@ function (_super) {
             /*endfinally*/
             ];
 
-          case 9:
+          case 11:
             return [2
             /*return*/
             , {
@@ -845,7 +883,6 @@ function (_super) {
     var _this = this;
 
     var query = this.props.query;
-    console.log(query);
 
     if (query.meta == null) {
       query.meta = [{
