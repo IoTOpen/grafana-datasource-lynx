@@ -44,7 +44,6 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       if (fn.meta['topic_read'] === null) {
         return;
       }
-      //const topicRead = String(clientId) + '/' + fn.meta['topic_read'];
       const topicRead = String(clientId) + '/' + fn.meta['topic_read'];
       if (fmap[topicRead] != null) {
         fmap[topicRead].push(fn);
@@ -98,6 +97,9 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       const functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
       const mappings = this.createLogTopicMappings(target.clientId, functions);
       const topics = Array.from(mappings.keys());
+      if (topics.length === 0) {
+        continue;
+      }
 
       const results = new Array<LogResult>();
       let offset = 0;
@@ -126,12 +128,12 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
             dps.push([logEntry.value, logEntry.timestamp * 1000]);
           }
         }
-        targetDatapoints.forEach((value, key) => {
-          const dp = { target: key, datapoints: value };
-          console.log(dp);
-          seriesList.push(dp);
-        });
       }
+      targetDatapoints.forEach((value, key) => {
+        const dp = { target: key, datapoints: value };
+        console.log(dp);
+        seriesList.push(dp);
+      });
     }
 
     return {

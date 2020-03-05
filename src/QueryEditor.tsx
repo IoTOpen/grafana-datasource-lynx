@@ -10,6 +10,7 @@ type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 interface State {
   installations: any[];
   functions: any[];
+  ticker: any;
 }
 
 export class QueryEditor extends PureComponent<Props, State> {
@@ -18,6 +19,7 @@ export class QueryEditor extends PureComponent<Props, State> {
     this.state = {
       installations: [],
       functions: [],
+      ticker: null,
     };
   }
 
@@ -43,6 +45,7 @@ export class QueryEditor extends PureComponent<Props, State> {
     this.props.datasource.fetchFunctions(Number(event.target.value)).then(functions => {
       this.setState({ functions: functions });
     });
+    this.props.onRunQuery();
   };
 
   addFilter = () => {
@@ -57,13 +60,26 @@ export class QueryEditor extends PureComponent<Props, State> {
       return !(idx === fidx);
     });
     onChange({ ...query, meta: query.meta });
+    this.props.onRunQuery();
   };
 
   onMetaUpdate = (idx: number, key: string, value: string) => {
-    const { onChange, query } = this.props;
+    const { onRunQuery, onChange, query } = this.props;
     query.meta[idx].key = key;
     query.meta[idx].value = value;
     onChange({ ...query, meta: query.meta });
+    if (this.state.ticker) {
+      clearTimeout(this.state.ticker);
+      const tmp = setTimeout(() => {
+        onRunQuery();
+      }, 250);
+      this.setState({ ticker: tmp });
+    } else {
+      const tmp = setTimeout(() => {
+        onRunQuery();
+      }, 250);
+      this.setState({ ticker: tmp });
+    }
   };
 
   render() {
