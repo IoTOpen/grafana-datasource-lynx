@@ -493,8 +493,7 @@ function (_super) {
     functions.map(function (fn) {
       if (fn.meta['topic_read'] === null) {
         return;
-      } //const topicRead = String(clientId) + '/' + fn.meta['topic_read'];
-
+      }
 
       var topicRead = String(clientId) + '/' + fn.meta['topic_read'];
 
@@ -577,6 +576,13 @@ function (_super) {
             functions = _g.sent();
             mappings = this.createLogTopicMappings(target.clientId, functions);
             topics = Array.from(mappings.keys());
+
+            if (topics.length === 0) {
+              return [3
+              /*break*/
+              , 7];
+            }
+
             results = new Array();
             offset = 0;
             _g.label = 4;
@@ -652,15 +658,6 @@ function (_super) {
                     if (e_3) throw e_3.error;
                   }
                 }
-
-                targetDatapoints.forEach(function (value, key) {
-                  var dp = {
-                    target: key,
-                    datapoints: value
-                  };
-                  console.log(dp);
-                  seriesList.push(dp);
-                });
               }
             } catch (e_2_1) {
               e_2 = {
@@ -674,6 +671,14 @@ function (_super) {
               }
             }
 
+            targetDatapoints.forEach(function (value, key) {
+              var dp = {
+                target: key,
+                datapoints: value
+              };
+              console.log(dp);
+              seriesList.push(dp);
+            });
             _g.label = 7;
 
           case 7:
@@ -798,6 +803,8 @@ function (_super) {
           functions: functions
         });
       });
+
+      _this.props.onRunQuery();
     };
 
     _this.addFilter = function () {
@@ -823,10 +830,13 @@ function (_super) {
       onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
         meta: query.meta
       }));
+
+      _this.props.onRunQuery();
     };
 
     _this.onMetaUpdate = function (idx, key, value) {
       var _a = _this.props,
+          onRunQuery = _a.onRunQuery,
           onChange = _a.onChange,
           query = _a.query;
       query.meta[idx].key = key;
@@ -834,11 +844,31 @@ function (_super) {
       onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
         meta: query.meta
       }));
+
+      if (_this.state.ticker) {
+        clearTimeout(_this.state.ticker);
+        var tmp = setTimeout(function () {
+          onRunQuery();
+        }, 250);
+
+        _this.setState({
+          ticker: tmp
+        });
+      } else {
+        var tmp = setTimeout(function () {
+          onRunQuery();
+        }, 250);
+
+        _this.setState({
+          ticker: tmp
+        });
+      }
     };
 
     _this.state = {
       installations: [],
-      functions: []
+      functions: [],
+      ticker: null
     };
     return _this;
   }
