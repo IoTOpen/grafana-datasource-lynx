@@ -200,34 +200,25 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
             data: [],
         };
 
+        const jobs: Promise<any[] | null>[] = [];
         for (const target of targets) {
             if(target.tabledata) {
-                this.queryTableData(target, from, to).then((res) => {
-                   if(res !== null) {
-                   }
-                });
-            }
-        }
-
-        for (const target of targets) {
-            if (target.tabledata) {
-                const res = await this.queryTableData(target, from, to);
-                if (res !== null) {
-                    for (const ds of res) {
-                        response.data.push(ds)
-                    }
-                }
+                const job = this.queryTableData(target, from, to);
+                jobs.push(job);
             } else {
-                const res = await this.queryTimeSeries(target, from, to);
-                if (res !== null) {
-                    console.log(res);
-                    for (const ds of res) {
-                        response.data.push(ds)
-                    }
-                }
+                const job = this.queryTimeSeries(target, from, to);
+                jobs.push(job);
             }
         }
-
+        const data = await Promise.all(jobs);
+        for (const series of data) {
+            if(series === null) {
+                continue;
+            }
+            for (const serie of series) {
+                response.data.push(serie);
+            }
+        }
         return response;
     }
 
