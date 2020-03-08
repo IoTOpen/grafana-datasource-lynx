@@ -20,6 +20,7 @@ export interface LogEntry {
   timestamp: number;
   topic: string;
   value: number;
+  msg: string;
 }
 
 export interface LogResult {

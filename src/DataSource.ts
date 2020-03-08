@@ -1,5 +1,13 @@
 import { FunctionX, LogResult, MyDataSourceOptions, MyQuery } from './types';
-import { DataQueryRequest, DataQueryResponse, DataSourceApi, DataSourceInstanceSettings, DefaultTimeRange } from '@grafana/data';
+import {
+  DataQueryRequest,
+  DataQueryResponse,
+  DataSourceApi,
+  DataSourceInstanceSettings,
+  DefaultTimeRange,
+  TableData,
+  TimeSeries,
+} from '@grafana/data';
 
 export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   private settings: DataSourceInstanceSettings<MyDataSourceOptions>;
@@ -81,16 +89,8 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       });
   }
 
-  async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
-    let { range } = options;
-    if (range == null) {
-      range = DefaultTimeRange;
-    }
-    const from = range.from.valueOf();
-    const to = range.to.valueOf();
-    const targets = options.targets.filter(target => !target.hide);
-
-    const seriesList: any[] = [];
+  async queryTimeSeries(targets: MyQuery[], from: number, to: number): Promise<TimeSeries[]> {
+    const seriesList: TimeSeries[] = [];
 
     for (const target of targets) {
       const targetDatapoints = new Map<string, number[][]>();
@@ -131,14 +131,72 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       }
       targetDatapoints.forEach((value, key) => {
         const dp = { target: key, datapoints: value };
-        console.log(dp);
         seriesList.push(dp);
       });
     }
 
-    return {
-      data: seriesList,
+    return seriesList;
+  }
+
+  async queryTableData(targets: MyQuery[], from: number, to: number): Promise<TableData[]> {
+    const tableData: TableData[] = [];
+
+    for (const target of targets) {
+      const targetData: TableData = {
+        refId: target.refId,
+        columns: [{ text: 'name' }, { text: 'value' }, { text: 'msg' }, { text: 'timestamp' }],
+        rows: [],
+      };
+
+      const functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
+      const mappings = this.createLogTopicMappings(target.clientId, functions);
+      const topics = Array.from(mappings.keys());
+      if (topics.length === 0) {
+        continue;
+      }
+      const results = new Array<LogResult>();
+      let offset = 0;
+      while (true) {
+        const logResult = await this.fetchLog(target.installationId, from / 1000, to / 1000, offset, topics);
+        results.push(logResult);
+        offset += logResult.count;
+        if (offset >= logResult.total) {
+          break;
+        }
+      }
+
+      for (const logResult of results) {
+        for (const logEntry of logResult.data) {
+          const matchingFunctions = mappings.get(logEntry.topic);
+          if (matchingFunctions === undefined) {
+            continue;
+          }
+          for (const matchingFunction of matchingFunctions) {
+            const dat = Date(logEntry.timestamp);
+            targetData.rows.push([matchingFunction.meta['name'], logEntry.value, logEntry.msg, ]);
+          }
+        }
+      }
+      tableData.push(targetData);
+    }
+
+    return tableData;
+  }
+
+  async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
+    let { range } = options;
+    if (range == null) {
+      range = DefaultTimeRange;
+    }
+    const from = range.from.valueOf();
+    const to = range.to.valueOf();
+    const targets = options.targets.filter(target => !target.hide);
+
+    const response: DataQueryResponse = {
+      data: await this.queryTableData(targets, from, to),
     };
+
+    return response;
   }
 
   testDatasource() {
