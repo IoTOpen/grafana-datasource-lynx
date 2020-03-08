@@ -129,7 +129,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
             }
         }
         targetDatapoints.forEach((value, key) => {
-            const dp: TimeSeries = {target: key, datapoints: value};
+            const dp: TimeSeries = {target: key, datapoints: value, refId: target.refId};
             seriesList.push(dp);
         });
 
@@ -180,6 +180,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
                 name: key,
                 columns: [{text: 'Time'}, {text: 'name'}, {text: 'value'}, {text: 'msg'}],
                 rows: value,
+                refId: target.refId,
             };
             targetData.push(dp);
         });
@@ -198,6 +199,15 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         const response: DataQueryResponse = {
             data: [],
         };
+
+        for (const target of targets) {
+            if(target.tabledata) {
+                this.queryTableData(target, from, to).then((res) => {
+                   if(res !== null) {
+                   }
+                });
+            }
+        }
 
         for (const target of targets) {
             if (target.tabledata) {
