@@ -6,6 +6,8 @@ export interface MyQuery extends DataQuery {
   type: string;
   meta: any[];
   tabledata: boolean;
+  messageFrom: string;
+  groupBy: string;
 }
 
 export const defaultQuery: Partial<MyQuery> = {

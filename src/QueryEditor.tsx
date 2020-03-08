@@ -3,7 +3,7 @@ import { DataSource } from './DataSource';
 import { MyQuery, MyDataSourceOptions } from './types';
 import { FilterEntry } from './components/FilterEntry';
 import { QueryEditorProps } from '@grafana/data';
-import { Button, FormLabel, Switch } from '@grafana/ui';
+import { Button, FormField, FormLabel, Switch } from '@grafana/ui';
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
@@ -64,28 +64,44 @@ export class QueryEditor extends PureComponent<Props, State> {
   };
 
   onMetaUpdate = (idx: number, key: string, value: string) => {
-    const { onRunQuery, onChange, query } = this.props;
+    const { onChange, query } = this.props;
     query.meta[idx].key = key;
     query.meta[idx].value = value;
     onChange({ ...query, meta: query.meta });
-    if (this.state.ticker) {
-      clearTimeout(this.state.ticker);
-      const tmp = setTimeout(() => {
-        onRunQuery();
-      }, 250);
-      this.setState({ ticker: tmp });
-    } else {
-      const tmp = setTimeout(() => {
-        onRunQuery();
-      }, 250);
-      this.setState({ ticker: tmp });
-    }
+    this.onRunQuery();
   };
 
   onDatatable = (): void => {
     const { onChange, query } = this.props;
     onChange({ ...query, tabledata: !query.tabledata });
     this.props.onRunQuery();
+  };
+
+  onRunQuery() {
+    if (this.state.ticker) {
+      clearTimeout(this.state.ticker);
+      const tmp = setTimeout(() => {
+        this.props.onRunQuery();
+      }, 250);
+      this.setState({ ticker: tmp });
+    } else {
+      const tmp = setTimeout(() => {
+        this.props.onRunQuery();
+      }, 250);
+      this.setState({ ticker: tmp });
+    }
+  }
+
+  onMessageChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, messageFrom: event.target.value });
+    this.onRunQuery();
+  };
+
+  onGroupByChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, groupBy: event.target.value });
+    this.onRunQuery();
   };
 
   render() {
@@ -116,6 +132,10 @@ export class QueryEditor extends PureComponent<Props, State> {
         <div className={'gf-form-inline'}>
           <Button onClick={this.addFilter}>Add filter</Button>
           <Switch label={'Table data'} checked={query.tabledata} onChange={this.onDatatable} />
+        </div>
+        <div className={'gf-form-inline'}>
+          <FormField labelWidth={40} label={'Group by'} onChange={this.onGroupByChange} value={query.groupBy} />
+          <FormField labelWidth={40} label={'Message from'} onChange={this.onMessageChange} value={query.messageFrom} />
         </div>
       </div>
     );
