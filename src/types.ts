@@ -5,6 +5,7 @@ export interface MyQuery extends DataQuery {
   clientId: number;
   type: string;
   meta: any[];
+  tabledata: boolean;
 }
 
 export const defaultQuery: Partial<MyQuery> = {

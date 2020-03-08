@@ -3,7 +3,7 @@ import { DataSource } from './DataSource';
 import { MyQuery, MyDataSourceOptions } from './types';
 import { FilterEntry } from './components/FilterEntry';
 import { QueryEditorProps } from '@grafana/data';
-import { Button, FormLabel } from '@grafana/ui';
+import { Button, FormLabel, Switch } from '@grafana/ui';
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
@@ -82,6 +82,12 @@ export class QueryEditor extends PureComponent<Props, State> {
     }
   };
 
+  onDatatable = (): void => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, tabledata: !query.tabledata });
+    this.props.onRunQuery();
+  };
+
   render() {
     const query = this.props.query as MyQuery;
     if (query.meta == null) {
@@ -107,7 +113,10 @@ export class QueryEditor extends PureComponent<Props, State> {
         {query.meta.map((value, idx) => {
           return <FilterEntry idx={idx} data={value} onDelete={this.onMetaDelete} onUpdate={this.onMetaUpdate} />;
         })}
-        <Button onClick={this.addFilter}>Add filter</Button>
+        <div className={'gf-form-inline'}>
+          <Button onClick={this.addFilter}>Add filter</Button>
+          <Switch label={'Table data'} checked={query.tabledata} onChange={this.onDatatable} />
+        </div>
       </div>
     );
   }
