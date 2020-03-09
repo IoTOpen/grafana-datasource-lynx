@@ -182,21 +182,6 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     const targetData: TableData[] = [];
     const targetDatapoints = new Map<string, any[][]>();
 
-//    let functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
-//    if (target.messageFrom !== '') {
-//      const messageMeta = [{ key: 'type', value: target.messageFrom }];
-//      for (const originalFilter of target.meta) {
-//        if (originalFilter.key !== 'type') {
-//          messageMeta.push(originalFilter);
-//        }
-//      }
-//      const tmp = await this.fetchFilteredFunctions(target.installationId, messageMeta);
-//      for (const fn of tmp) {
-//        functions.push(fn);
-//      }
-//    }
-//    functions = this.distinctiveId(functions);
-
     const functions = await this.fetchQueriedFunctions(target);
     const mappings = this.createLogTopicMappings(target.clientId, functions);
     const topics = Array.from(mappings.keys());
