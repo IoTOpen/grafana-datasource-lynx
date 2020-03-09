@@ -17,6 +17,17 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     this.settings = instanceSettings;
   }
 
+  distinctiveId(input: FunctionX[]): FunctionX[] {
+    const tag = new Map<number, boolean>();
+    return input.filter(fn => {
+      if (tag.get(fn.id) === undefined) {
+        tag.set(fn.id, true);
+        return true;
+      }
+      return false;
+    });
+  }
+
   fetchInstallations(): Promise<any> {
     return fetch(this.settings.jsonData.url + '/api/v2/installationinfo/grafana/ds', {
       headers: {
@@ -111,6 +122,11 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       }
     }
 
+    let groupBy = 'name';
+    if (target.groupBy !== '') {
+      groupBy = target.groupBy;
+    }
+
     for (const logResult of results) {
       for (const logEntry of logResult.data) {
         const matchingFunctions = mappings.get(logEntry.topic);
@@ -118,7 +134,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           continue;
         }
         for (const matchingFunction of matchingFunctions) {
-          const name = matchingFunction.meta['name'];
+          const name = matchingFunction.meta[groupBy];
           let dps = targetDatapoints.get(name);
           if (dps === undefined) {
             dps = [];
@@ -138,17 +154,6 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     });
 
     return seriesList;
-  }
-
-  distinctiveId(input: FunctionX[]): FunctionX[] {
-    const tag = new Map<number, boolean>();
-    return input.filter(fn => {
-      if (tag.get(fn.id) === undefined) {
-        tag.set(fn.id, true);
-        return true;
-      }
-      return false;
-    });
   }
 
   async queryTableData(target: MyQuery, from: number, to: number): Promise<TableData[] | null> {

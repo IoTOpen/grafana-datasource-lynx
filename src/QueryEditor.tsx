@@ -108,6 +108,7 @@ export class QueryEditor extends PureComponent<Props, State> {
     const query = this.props.query as MyQuery;
     if (query.meta == null) {
       query.meta = [{ key: 'type', value: '' }];
+      query.groupBy = 'name';
     }
 
     return (
