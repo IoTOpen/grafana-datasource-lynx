@@ -100,27 +100,49 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       });
   }
 
-  async queryTimeSeries(target: MyQuery, from: number, to: number): Promise<TimeSeries[] | null> {
-    const seriesList: TimeSeries[] = [];
-
-    const targetDatapoints = new Map<string, number[][]>();
-    const functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
-    const mappings = this.createLogTopicMappings(target.clientId, functions);
-    const topics = Array.from(mappings.keys());
-    if (topics.length === 0) {
-      return null;
-    }
-
+  async fetchLogFull(installationId: number, from: number, to: number, topics: string[]): Promise<LogResult[]> {
     const results = new Array<LogResult>();
     let offset = 0;
     while (true) {
-      const logResult = await this.fetchLog(target.installationId, from / 1000, to / 1000, offset, topics);
+      const logResult = await this.fetchLog(installationId, from / 1000, to / 1000, offset, topics);
       results.push(logResult);
       offset += logResult.count;
       if (offset >= logResult.total) {
         break;
       }
     }
+    return results;
+  }
+
+  async fetchQueriedFunctions(target: MyQuery): Promise<FunctionX[]> {
+    let functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
+    if (target.messageFrom !== '') {
+      const messageMeta = [{ key: 'type', value: target.messageFrom }];
+      for (const originalFilter of target.meta) {
+        if (originalFilter.key !== 'type') {
+          messageMeta.push(originalFilter);
+        }
+      }
+      const tmp = await this.fetchFilteredFunctions(target.installationId, messageMeta);
+      for (const fn of tmp) {
+        functions.push(fn);
+      }
+    }
+    functions = this.distinctiveId(functions);
+    return functions;
+  }
+
+  async queryTimeSeries(target: MyQuery, from: number, to: number): Promise<TimeSeries[] | null> {
+    const seriesList: TimeSeries[] = [];
+    const targetDatapoints = new Map<string, number[][]>();
+
+    const functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
+    const mappings = this.createLogTopicMappings(target.clientId, functions);
+    const topics = Array.from(mappings.keys());
+    if (topics.length === 0) {
+      return null;
+    }
+    const results = await this.fetchLogFull(target.installationId, from, to, topics);
 
     let groupBy = 'name';
     if (target.groupBy !== '') {
@@ -160,41 +182,34 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     const targetData: TableData[] = [];
     const targetDatapoints = new Map<string, any[][]>();
 
-    let functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
-    if (target.messageFrom !== '') {
-      const messageMeta = [{ key: 'type', value: target.messageFrom }];
-      for (const originalFilter of target.meta) {
-        if (originalFilter.key !== 'type') {
-          messageMeta.push(originalFilter);
-        }
-      }
-      const tmp = await this.fetchFilteredFunctions(target.installationId, messageMeta);
-      for (const fn of tmp) {
-        functions.push(fn);
-      }
-    }
-    functions = this.distinctiveId(functions);
+//    let functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
+//    if (target.messageFrom !== '') {
+//      const messageMeta = [{ key: 'type', value: target.messageFrom }];
+//      for (const originalFilter of target.meta) {
+//        if (originalFilter.key !== 'type') {
+//          messageMeta.push(originalFilter);
+//        }
+//      }
+//      const tmp = await this.fetchFilteredFunctions(target.installationId, messageMeta);
+//      for (const fn of tmp) {
+//        functions.push(fn);
+//      }
+//    }
+//    functions = this.distinctiveId(functions);
 
+    const functions = await this.fetchQueriedFunctions(target);
     const mappings = this.createLogTopicMappings(target.clientId, functions);
     const topics = Array.from(mappings.keys());
     if (topics.length === 0) {
       return null;
     }
-    const results = new Array<LogResult>();
-    let offset = 0;
-    while (true) {
-      const logResult = await this.fetchLog(target.installationId, from / 1000, to / 1000, offset, topics);
-      results.push(logResult);
-      offset += logResult.count;
-      if (offset >= logResult.total) {
-        break;
-      }
-    }
+    const results = await this.fetchLogFull(target.installationId, from, to, topics);
 
     let groupBy = target.groupBy;
     if (groupBy === '') {
       groupBy = 'name';
     }
+
     const lastMsg = new Map<string, string>();
     for (const logResult of results) {
       for (const logEntry of logResult.data) {
