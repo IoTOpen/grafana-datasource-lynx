@@ -928,7 +928,7 @@ function (_super) {
             }
 
             targetDatapoints.forEach(function (value, key) {
-              console.log(key);
+              //console.log(key);
               var dp = {
                 name: targetDatapointsName.get(key),
                 columns: [{

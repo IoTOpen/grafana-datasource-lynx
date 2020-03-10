@@ -254,7 +254,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       }
     }
     targetDatapoints.forEach((value, key) => {
-      console.log(key);
+      //console.log(key);
       const dp: TableData = {
         name: targetDatapointsName.get(key),
         columns: [{ text: 'Time' }, { text: 'name' }, { text: 'value' }, { text: 'msg' }],
