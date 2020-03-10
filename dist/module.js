@@ -850,6 +850,10 @@ function (_super) {
                         matchingFunction = matchingFunctions_2_1.value;
                         msg = logEntry.msg;
 
+                        if (msg === undefined) {
+                          msg = '';
+                        }
+
                         if (target.messageFrom !== undefined && target.messageFrom !== '' && matchingFunction.type === target.messageFrom) {
                           lastMsg.set(matchingFunction.meta['device_id'], logEntry.msg);
                           continue;

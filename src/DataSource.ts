@@ -215,6 +215,9 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         }
         for (const matchingFunction of matchingFunctions) {
           let msg = logEntry.msg;
+          if (msg === undefined) {
+            msg = '';
+          }
           if (target.messageFrom !== undefined && target.messageFrom !== '' && matchingFunction.type === target.messageFrom) {
             lastMsg.set(matchingFunction.meta['device_id'], logEntry.msg);
             continue;
