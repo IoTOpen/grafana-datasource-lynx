@@ -123,6 +123,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           messageMeta.push(originalFilter);
         }
       }
+      // Add "message from" functions
       const tmp = await this.fetchFilteredFunctions(target.installationId, messageMeta);
       for (const fn of tmp) {
         functions.push(fn);
@@ -135,6 +136,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   async queryTimeSeries(target: MyQuery, from: number, to: number): Promise<TimeSeries[] | null> {
     const seriesList: TimeSeries[] = [];
     const targetDatapoints = new Map<string, number[][]>();
+    const targetDatapointsName = new Map<string, string>();
 
     const functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
     const mappings = this.createLogTopicMappings(target.clientId, functions);
@@ -144,11 +146,6 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     }
     const results = await this.fetchLogFull(target.installationId, from, to, topics);
 
-    let groupBy = 'name';
-    if (target.groupBy !== '') {
-      groupBy = target.groupBy;
-    }
-
     for (const logResult of results) {
       for (const logEntry of logResult.data) {
         const matchingFunctions = mappings.get(logEntry.topic);
@@ -156,20 +153,38 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           continue;
         }
         for (const matchingFunction of matchingFunctions) {
-          const name = matchingFunction.meta[groupBy];
-          let dps = targetDatapoints.get(name);
+          // Grouping
+          let group = String(matchingFunction.id);
+          if (target.groupBy !== undefined && target.groupBy !== '') {
+            const tmpGroup = matchingFunction.meta[target.groupBy];
+            if (tmpGroup !== undefined) {
+              group = tmpGroup;
+            }
+          }
+          let dps = targetDatapoints.get(group);
           if (dps === undefined) {
             dps = [];
-            targetDatapoints.set(name, dps);
+            targetDatapoints.set(group, dps);
           }
+
+          // Naming
+          if (!target.nameBy || target.nameBy === '') {
+            target.nameBy = 'name';
+          }
+          targetDatapointsName.set(group, matchingFunction.meta[target.nameBy]);
+
           dps.push([logEntry.value, logEntry.timestamp * 1000]);
         }
       }
     }
     targetDatapoints.forEach((value, key) => {
+      let name = targetDatapointsName.get(key);
+      if (name === undefined) {
+        name = key;
+      }
       const dp: TimeSeries = {
         refId: target.refId,
-        target: key,
+        target: name,
         datapoints: value,
       };
       seriesList.push(dp);
@@ -181,6 +196,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   async queryTableData(target: MyQuery, from: number, to: number): Promise<TableData[] | null> {
     const targetData: TableData[] = [];
     const targetDatapoints = new Map<string, any[][]>();
+    const targetDatapointsName = new Map<string, string>();
 
     const functions = await this.fetchQueriedFunctions(target);
     const mappings = this.createLogTopicMappings(target.clientId, functions);
@@ -190,11 +206,6 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     }
     const results = await this.fetchLogFull(target.installationId, from, to, topics);
 
-    let groupBy = target.groupBy;
-    if (groupBy === '') {
-      groupBy = 'name';
-    }
-
     const lastMsg = new Map<string, string>();
     for (const logResult of results) {
       for (const logEntry of logResult.data) {
@@ -203,14 +214,11 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           continue;
         }
         for (const matchingFunction of matchingFunctions) {
-          if (target.messageFrom !== '') {
-            if (matchingFunction.type === target.messageFrom) {
-              lastMsg.set(matchingFunction.meta['device_id'], logEntry.msg);
-              continue;
-            }
-          }
           let msg = logEntry.msg;
-          if (target.messageFrom !== '') {
+          if (target.messageFrom !== undefined && target.messageFrom !== '' && matchingFunction.type === target.messageFrom) {
+            lastMsg.set(matchingFunction.meta['device_id'], logEntry.msg);
+            continue;
+          } else if (target.messageFrom !== undefined && target.messageFrom !== '') {
             const tmpMsg = lastMsg.get(matchingFunction.meta['device_id']);
             if (tmpMsg !== undefined) {
               msg = tmpMsg;
@@ -218,31 +226,43 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
               continue;
             }
           }
-          let name = matchingFunction.meta[groupBy];
-          if (name === undefined) {
-            name = msg;
+          // Grouping
+          let group = String(matchingFunction.id);
+          if (target.groupBy !== undefined && target.groupBy !== '') {
+            let tmpGroup = matchingFunction.meta[target.groupBy];
+            if (tmpGroup === undefined) {
+              tmpGroup = msg;
+            }
+            group = tmpGroup;
           }
-          let dps = targetDatapoints.get(name);
+
+          // Naming
+          if (!target.nameBy) {
+            target.nameBy = 'name';
+          }
+          targetDatapointsName.set(group, matchingFunction.meta[target.nameBy]);
+
+          let dps = targetDatapoints.get(group);
           if (dps === undefined) {
             dps = [];
-            targetDatapoints.set(name, dps);
+            targetDatapoints.set(group, dps);
           }
+
           const dat = new Date(logEntry.timestamp * 1000);
-          dps.push([dat.toISOString(), matchingFunction.meta['name'], logEntry.value, msg]);
+          dps.push([dat.toISOString(), matchingFunction.meta[target.nameBy], logEntry.value, msg]);
         }
       }
     }
     targetDatapoints.forEach((value, key) => {
       console.log(key);
       const dp: TableData = {
-        name: key,
+        name: targetDatapointsName.get(key),
         columns: [{ text: 'Time' }, { text: 'name' }, { text: 'value' }, { text: 'msg' }],
         rows: value,
         refId: target.refId,
       };
       targetData.push(dp);
     });
-    console.log(targetData);
     return targetData;
   }
 

@@ -666,7 +666,7 @@ function (_super) {
 
   DataSource.prototype.queryTimeSeries = function (target, from, to) {
     return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
-      var seriesList, targetDatapoints, functions, mappings, topics, results, groupBy, results_1, results_1_1, logResult, _a, _b, logEntry, matchingFunctions, matchingFunctions_1, matchingFunctions_1_1, matchingFunction, name_1, dps;
+      var seriesList, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, results_1, results_1_1, logResult, _a, _b, logEntry, matchingFunctions, matchingFunctions_1, matchingFunctions_1_1, matchingFunction, group, tmpGroup, dps;
 
       var e_3, _c, e_4, _d, e_5, _e;
 
@@ -675,6 +675,7 @@ function (_super) {
           case 0:
             seriesList = [];
             targetDatapoints = new Map();
+            targetDatapointsName = new Map();
             return [4
             /*yield*/
             , this.fetchFilteredFunctions(target.installationId, target.meta)];
@@ -696,11 +697,6 @@ function (_super) {
 
           case 2:
             results = _f.sent();
-            groupBy = 'name';
-
-            if (target.groupBy !== '') {
-              groupBy = target.groupBy;
-            }
 
             try {
               for (results_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(results), results_1_1 = results_1.next(); !results_1_1.done; results_1_1 = results_1.next()) {
@@ -718,14 +714,29 @@ function (_super) {
                     try {
                       for (matchingFunctions_1 = (e_5 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(matchingFunctions)), matchingFunctions_1_1 = matchingFunctions_1.next(); !matchingFunctions_1_1.done; matchingFunctions_1_1 = matchingFunctions_1.next()) {
                         matchingFunction = matchingFunctions_1_1.value;
-                        name_1 = matchingFunction.meta[groupBy];
-                        dps = targetDatapoints.get(name_1);
+                        group = String(matchingFunction.id);
+
+                        if (target.groupBy !== undefined && target.groupBy !== '') {
+                          tmpGroup = matchingFunction.meta[target.groupBy];
+
+                          if (tmpGroup !== undefined) {
+                            group = tmpGroup;
+                          }
+                        }
+
+                        dps = targetDatapoints.get(group);
 
                         if (dps === undefined) {
                           dps = [];
-                          targetDatapoints.set(name_1, dps);
+                          targetDatapoints.set(group, dps);
+                        } // Naming
+
+
+                        if (!target.nameBy || target.nameBy === '') {
+                          target.nameBy = 'name';
                         }
 
+                        targetDatapointsName.set(group, matchingFunction.meta[target.nameBy]);
                         dps.push([logEntry.value, logEntry.timestamp * 1000]);
                       }
                     } catch (e_5_1) {
@@ -765,9 +776,15 @@ function (_super) {
             }
 
             targetDatapoints.forEach(function (value, key) {
+              var name = targetDatapointsName.get(key);
+
+              if (name === undefined) {
+                name = key;
+              }
+
               var dp = {
                 refId: target.refId,
-                target: key,
+                target: name,
                 datapoints: value
               };
               seriesList.push(dp);
@@ -782,7 +799,7 @@ function (_super) {
 
   DataSource.prototype.queryTableData = function (target, from, to) {
     return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
-      var targetData, targetDatapoints, functions, mappings, topics, results, groupBy, lastMsg, results_2, results_2_1, logResult, _a, _b, logEntry, matchingFunctions, matchingFunctions_2, matchingFunctions_2_1, matchingFunction, msg, tmpMsg, name_2, dps, dat;
+      var targetData, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, lastMsg, results_2, results_2_1, logResult, _a, _b, logEntry, matchingFunctions, matchingFunctions_2, matchingFunctions_2_1, matchingFunction, msg, tmpMsg, group, tmpGroup, dps, dat;
 
       var e_6, _c, e_7, _d, e_8, _e;
 
@@ -791,6 +808,7 @@ function (_super) {
           case 0:
             targetData = [];
             targetDatapoints = new Map();
+            targetDatapointsName = new Map();
             return [4
             /*yield*/
             , this.fetchQueriedFunctions(target)];
@@ -812,12 +830,6 @@ function (_super) {
 
           case 2:
             results = _f.sent();
-            groupBy = target.groupBy;
-
-            if (groupBy === '') {
-              groupBy = 'name';
-            }
-
             lastMsg = new Map();
 
             try {
@@ -836,17 +848,12 @@ function (_super) {
                     try {
                       for (matchingFunctions_2 = (e_8 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(matchingFunctions)), matchingFunctions_2_1 = matchingFunctions_2.next(); !matchingFunctions_2_1.done; matchingFunctions_2_1 = matchingFunctions_2.next()) {
                         matchingFunction = matchingFunctions_2_1.value;
-
-                        if (target.messageFrom !== '') {
-                          if (matchingFunction.type === target.messageFrom) {
-                            lastMsg.set(matchingFunction.meta['device_id'], logEntry.msg);
-                            continue;
-                          }
-                        }
-
                         msg = logEntry.msg;
 
-                        if (target.messageFrom !== '') {
+                        if (target.messageFrom !== undefined && target.messageFrom !== '' && matchingFunction.type === target.messageFrom) {
+                          lastMsg.set(matchingFunction.meta['device_id'], logEntry.msg);
+                          continue;
+                        } else if (target.messageFrom !== undefined && target.messageFrom !== '') {
                           tmpMsg = lastMsg.get(matchingFunction.meta['device_id']);
 
                           if (tmpMsg !== undefined) {
@@ -856,21 +863,33 @@ function (_super) {
                           }
                         }
 
-                        name_2 = matchingFunction.meta[groupBy];
+                        group = String(matchingFunction.id);
 
-                        if (name_2 === undefined) {
-                          name_2 = msg;
+                        if (target.groupBy !== undefined && target.groupBy !== '') {
+                          tmpGroup = matchingFunction.meta[target.groupBy];
+
+                          if (tmpGroup === undefined) {
+                            tmpGroup = msg;
+                          }
+
+                          group = tmpGroup;
+                        } // Naming
+
+
+                        if (!target.nameBy) {
+                          target.nameBy = 'name';
                         }
 
-                        dps = targetDatapoints.get(name_2);
+                        targetDatapointsName.set(group, matchingFunction.meta[target.nameBy]);
+                        dps = targetDatapoints.get(group);
 
                         if (dps === undefined) {
                           dps = [];
-                          targetDatapoints.set(name_2, dps);
+                          targetDatapoints.set(group, dps);
                         }
 
                         dat = new Date(logEntry.timestamp * 1000);
-                        dps.push([dat.toISOString(), matchingFunction.meta['name'], logEntry.value, msg]);
+                        dps.push([dat.toISOString(), matchingFunction.meta[target.nameBy], logEntry.value, msg]);
                       }
                     } catch (e_8_1) {
                       e_8 = {
@@ -911,7 +930,7 @@ function (_super) {
             targetDatapoints.forEach(function (value, key) {
               console.log(key);
               var dp = {
-                name: key,
+                name: targetDatapointsName.get(key),
                 columns: [{
                   text: 'Time'
                 }, {
@@ -926,7 +945,6 @@ function (_super) {
               };
               targetData.push(dp);
             });
-            console.log(targetData);
             return [2
             /*return*/
             , targetData];
@@ -1193,6 +1211,20 @@ function (_super) {
       _this.onRunQuery();
     };
 
+    _this.onNameByChange = function (event) {
+      var _a = _this.props,
+          onChange = _a.onChange,
+          query = _a.query;
+      onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
+        nameBy: event.target.value
+      }));
+
+      _this.onRunQuery();
+    };
+
+    _this.tooltipGroupBy = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "Group series by some meta key or payload ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "msg"), " field. Defaults to Function ID.");
+    _this.tooltipNameBy = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "This will name series based on some meta key.", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("br", null), "Defaults to ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "name"), ".");
+    _this.tooltipMessageFrom = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "Using this field will join matching functions with the same filter, but the type changed to this field. The msg field will be overwritten by messages matching this type, linked through ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "device_id"), " meta key. Useful for eg. joining positional data. ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("br", null), "This field is only applied on table data.");
     _this.state = {
       installations: [],
       functions: [],
@@ -1268,10 +1300,11 @@ function (_super) {
         key: 'type',
         value: ''
       }];
-      query.groupBy = 'name';
     }
 
-    return react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", null, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+    return react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+      className: 'section gf-form-group'
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: 'gf-form-inline'
     }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormLabel"], {
       className: 'query-keyword'
@@ -1296,26 +1329,41 @@ function (_super) {
         onUpdate: _this.onMetaUpdate
       });
     }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
-      className: 'gf-form-inline'
+      className: 'gf-form-inline',
+      style: {
+        paddingBottom: 10
+      }
     }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Button"], {
       onClick: this.addFilter
-    }, "Add filter"), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Switch"], {
-      label: 'Table data',
-      checked: query.tabledata,
-      onChange: this.onDatatable
-    })), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+    }, "Add filter")), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: 'gf-form-inline'
     }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormField"], {
       labelWidth: 40,
       label: 'Group by',
       onChange: this.onGroupByChange,
-      value: query.groupBy
+      value: query.groupBy,
+      tooltip: this.tooltipGroupBy
     }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormField"], {
+      labelWidth: 40,
+      label: 'Name by',
+      onChange: this.onNameByChange,
+      value: query.nameBy,
+      tooltip: this.tooltipNameBy
+    })), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+      className: 'gf-form-inline'
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Switch"], {
+      label: 'As table data',
+      checked: query.tabledata,
+      onChange: this.onDatatable
+    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+      hidden: !query.tabledata
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormField"], {
       labelWidth: 40,
       label: 'Message from',
       onChange: this.onMessageChange,
-      value: query.messageFrom
-    })));
+      value: query.messageFrom,
+      tooltip: this.tooltipMessageFrom
+    }))));
   };
 
   return QueryEditor;

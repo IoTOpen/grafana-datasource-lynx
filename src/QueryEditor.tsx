@@ -104,15 +104,40 @@ export class QueryEditor extends PureComponent<Props, State> {
     this.onRunQuery();
   };
 
+  onNameByChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, nameBy: event.target.value });
+    this.onRunQuery();
+  };
+
+  tooltipGroupBy = (
+    <>
+      Group series by some meta key or payload <code>msg</code> field. Defaults to Function ID.
+    </>
+  );
+  tooltipNameBy = (
+    <>
+      This will name series based on some meta key.
+      <br />
+      Defaults to <code>name</code>.
+    </>
+  );
+  tooltipMessageFrom = (
+    <>
+      Using this field will join matching functions with the same filter, but the type changed to this field. The msg field will be overwritten by
+      messages matching this type, linked through <code>device_id</code> meta key. Useful for eg. joining positional data. <br />
+      This field is only applied on table data.
+    </>
+  );
+
   render() {
     const query = this.props.query as MyQuery;
     if (query.meta == null) {
       query.meta = [{ key: 'type', value: '' }];
-      query.groupBy = 'name';
     }
 
     return (
-      <div>
+      <div className={'section gf-form-group'}>
         <div className={'gf-form-inline'}>
           <FormLabel className={'query-keyword'}>Installation</FormLabel>
           <select onChange={this.onSelectInstallation} style={{ width: 330 }}>
@@ -130,13 +155,24 @@ export class QueryEditor extends PureComponent<Props, State> {
         {query.meta.map((value, idx) => {
           return <FilterEntry idx={idx} data={value} onDelete={this.onMetaDelete} onUpdate={this.onMetaUpdate} />;
         })}
-        <div className={'gf-form-inline'}>
+        <div className={'gf-form-inline'} style={{ paddingBottom: 10 }}>
           <Button onClick={this.addFilter}>Add filter</Button>
-          <Switch label={'Table data'} checked={query.tabledata} onChange={this.onDatatable} />
         </div>
         <div className={'gf-form-inline'}>
-          <FormField labelWidth={40} label={'Group by'} onChange={this.onGroupByChange} value={query.groupBy} />
-          <FormField labelWidth={40} label={'Message from'} onChange={this.onMessageChange} value={query.messageFrom} />
+          <FormField labelWidth={40} label={'Group by'} onChange={this.onGroupByChange} value={query.groupBy} tooltip={this.tooltipGroupBy} />
+          <FormField labelWidth={40} label={'Name by'} onChange={this.onNameByChange} value={query.nameBy} tooltip={this.tooltipNameBy} />
+        </div>
+        <div className={'gf-form-inline'}>
+          <Switch label={'As table data'} checked={query.tabledata} onChange={this.onDatatable} />
+          <div hidden={!query.tabledata}>
+            <FormField
+              labelWidth={40}
+              label={'Message from'}
+              onChange={this.onMessageChange}
+              value={query.messageFrom}
+              tooltip={this.tooltipMessageFrom}
+            />
+          </div>
         </div>
       </div>
     );
