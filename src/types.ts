@@ -5,6 +5,10 @@ export interface MyQuery extends DataQuery {
   clientId: number;
   type: string;
   meta: any[];
+  tabledata: boolean;
+  messageFrom: string;
+  groupBy: string;
+  nameBy: string;
 }
 
 export const defaultQuery: Partial<MyQuery> = {
@@ -20,6 +24,7 @@ export interface LogEntry {
   timestamp: number;
   topic: string;
   value: number;
+  msg: string;
 }
 
 export interface LogResult {

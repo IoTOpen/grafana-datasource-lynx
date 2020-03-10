@@ -455,6 +455,18 @@ function (_super) {
     return _this;
   }
 
+  DataSource.prototype.distinctiveId = function (input) {
+    var tag = new Map();
+    return input.filter(function (fn) {
+      if (tag.get(fn.id) === undefined) {
+        tag.set(fn.id, true);
+        return true;
+      }
+
+      return false;
+    });
+  };
+
   DataSource.prototype.fetchInstallations = function () {
     return fetch(this.settings.jsonData.url + '/api/v2/installationinfo/grafana/ds', {
       headers: {
@@ -533,14 +545,426 @@ function (_super) {
     });
   };
 
+  DataSource.prototype.fetchLogFull = function (installationId, from, to, topics) {
+    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
+      var results, offset, logResult;
+      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_a) {
+        switch (_a.label) {
+          case 0:
+            results = new Array();
+            offset = 0;
+            _a.label = 1;
+
+          case 1:
+            if (false) {}
+            return [4
+            /*yield*/
+            , this.fetchLog(installationId, from / 1000, to / 1000, offset, topics)];
+
+          case 2:
+            logResult = _a.sent();
+            results.push(logResult);
+            offset += logResult.count;
+
+            if (offset >= logResult.total) {
+              return [3
+              /*break*/
+              , 3];
+            }
+
+            return [3
+            /*break*/
+            , 1];
+
+          case 3:
+            return [2
+            /*return*/
+            , results];
+        }
+      });
+    });
+  };
+
+  DataSource.prototype.fetchQueriedFunctions = function (target) {
+    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
+      var functions, messageMeta, _a, _b, originalFilter, tmp, tmp_1, tmp_1_1, fn;
+
+      var e_1, _c, e_2, _d;
+
+      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_e) {
+        switch (_e.label) {
+          case 0:
+            return [4
+            /*yield*/
+            , this.fetchFilteredFunctions(target.installationId, target.meta)];
+
+          case 1:
+            functions = _e.sent();
+            if (!(target.messageFrom !== '')) return [3
+            /*break*/
+            , 3];
+            messageMeta = [{
+              key: 'type',
+              value: target.messageFrom
+            }];
+
+            try {
+              for (_a = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(target.meta), _b = _a.next(); !_b.done; _b = _a.next()) {
+                originalFilter = _b.value;
+
+                if (originalFilter.key !== 'type') {
+                  messageMeta.push(originalFilter);
+                }
+              }
+            } catch (e_1_1) {
+              e_1 = {
+                error: e_1_1
+              };
+            } finally {
+              try {
+                if (_b && !_b.done && (_c = _a["return"])) _c.call(_a);
+              } finally {
+                if (e_1) throw e_1.error;
+              }
+            }
+
+            return [4
+            /*yield*/
+            , this.fetchFilteredFunctions(target.installationId, messageMeta)];
+
+          case 2:
+            tmp = _e.sent();
+
+            try {
+              for (tmp_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(tmp), tmp_1_1 = tmp_1.next(); !tmp_1_1.done; tmp_1_1 = tmp_1.next()) {
+                fn = tmp_1_1.value;
+                functions.push(fn);
+              }
+            } catch (e_2_1) {
+              e_2 = {
+                error: e_2_1
+              };
+            } finally {
+              try {
+                if (tmp_1_1 && !tmp_1_1.done && (_d = tmp_1["return"])) _d.call(tmp_1);
+              } finally {
+                if (e_2) throw e_2.error;
+              }
+            }
+
+            _e.label = 3;
+
+          case 3:
+            functions = this.distinctiveId(functions);
+            return [2
+            /*return*/
+            , functions];
+        }
+      });
+    });
+  };
+
+  DataSource.prototype.queryTimeSeries = function (target, from, to) {
+    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
+      var seriesList, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, results_1, results_1_1, logResult, _a, _b, logEntry, matchingFunctions, matchingFunctions_1, matchingFunctions_1_1, matchingFunction, group, tmpGroup, dps;
+
+      var e_3, _c, e_4, _d, e_5, _e;
+
+      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_f) {
+        switch (_f.label) {
+          case 0:
+            seriesList = [];
+            targetDatapoints = new Map();
+            targetDatapointsName = new Map();
+            return [4
+            /*yield*/
+            , this.fetchFilteredFunctions(target.installationId, target.meta)];
+
+          case 1:
+            functions = _f.sent();
+            mappings = this.createLogTopicMappings(target.clientId, functions);
+            topics = Array.from(mappings.keys());
+
+            if (topics.length === 0) {
+              return [2
+              /*return*/
+              , null];
+            }
+
+            return [4
+            /*yield*/
+            , this.fetchLogFull(target.installationId, from, to, topics)];
+
+          case 2:
+            results = _f.sent();
+
+            try {
+              for (results_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(results), results_1_1 = results_1.next(); !results_1_1.done; results_1_1 = results_1.next()) {
+                logResult = results_1_1.value;
+
+                try {
+                  for (_a = (e_4 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(logResult.data)), _b = _a.next(); !_b.done; _b = _a.next()) {
+                    logEntry = _b.value;
+                    matchingFunctions = mappings.get(logEntry.topic);
+
+                    if (matchingFunctions === undefined) {
+                      continue;
+                    }
+
+                    try {
+                      for (matchingFunctions_1 = (e_5 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(matchingFunctions)), matchingFunctions_1_1 = matchingFunctions_1.next(); !matchingFunctions_1_1.done; matchingFunctions_1_1 = matchingFunctions_1.next()) {
+                        matchingFunction = matchingFunctions_1_1.value;
+                        group = String(matchingFunction.id);
+
+                        if (target.groupBy !== undefined && target.groupBy !== '') {
+                          tmpGroup = matchingFunction.meta[target.groupBy];
+
+                          if (tmpGroup !== undefined) {
+                            group = tmpGroup;
+                          }
+                        }
+
+                        dps = targetDatapoints.get(group);
+
+                        if (dps === undefined) {
+                          dps = [];
+                          targetDatapoints.set(group, dps);
+                        } // Naming
+
+
+                        if (!target.nameBy || target.nameBy === '') {
+                          target.nameBy = 'name';
+                        }
+
+                        targetDatapointsName.set(group, matchingFunction.meta[target.nameBy]);
+                        dps.push([logEntry.value, logEntry.timestamp * 1000]);
+                      }
+                    } catch (e_5_1) {
+                      e_5 = {
+                        error: e_5_1
+                      };
+                    } finally {
+                      try {
+                        if (matchingFunctions_1_1 && !matchingFunctions_1_1.done && (_e = matchingFunctions_1["return"])) _e.call(matchingFunctions_1);
+                      } finally {
+                        if (e_5) throw e_5.error;
+                      }
+                    }
+                  }
+                } catch (e_4_1) {
+                  e_4 = {
+                    error: e_4_1
+                  };
+                } finally {
+                  try {
+                    if (_b && !_b.done && (_d = _a["return"])) _d.call(_a);
+                  } finally {
+                    if (e_4) throw e_4.error;
+                  }
+                }
+              }
+            } catch (e_3_1) {
+              e_3 = {
+                error: e_3_1
+              };
+            } finally {
+              try {
+                if (results_1_1 && !results_1_1.done && (_c = results_1["return"])) _c.call(results_1);
+              } finally {
+                if (e_3) throw e_3.error;
+              }
+            }
+
+            targetDatapoints.forEach(function (value, key) {
+              var name = targetDatapointsName.get(key);
+
+              if (name === undefined) {
+                name = key;
+              }
+
+              var dp = {
+                refId: target.refId,
+                target: name,
+                datapoints: value
+              };
+              seriesList.push(dp);
+            });
+            return [2
+            /*return*/
+            , seriesList];
+        }
+      });
+    });
+  };
+
+  DataSource.prototype.queryTableData = function (target, from, to) {
+    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
+      var targetData, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, lastMsg, results_2, results_2_1, logResult, _a, _b, logEntry, matchingFunctions, matchingFunctions_2, matchingFunctions_2_1, matchingFunction, msg, tmpMsg, group, tmpGroup, dps, dat;
+
+      var e_6, _c, e_7, _d, e_8, _e;
+
+      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_f) {
+        switch (_f.label) {
+          case 0:
+            targetData = [];
+            targetDatapoints = new Map();
+            targetDatapointsName = new Map();
+            return [4
+            /*yield*/
+            , this.fetchQueriedFunctions(target)];
+
+          case 1:
+            functions = _f.sent();
+            mappings = this.createLogTopicMappings(target.clientId, functions);
+            topics = Array.from(mappings.keys());
+
+            if (topics.length === 0) {
+              return [2
+              /*return*/
+              , null];
+            }
+
+            return [4
+            /*yield*/
+            , this.fetchLogFull(target.installationId, from, to, topics)];
+
+          case 2:
+            results = _f.sent();
+            lastMsg = new Map();
+
+            try {
+              for (results_2 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(results), results_2_1 = results_2.next(); !results_2_1.done; results_2_1 = results_2.next()) {
+                logResult = results_2_1.value;
+
+                try {
+                  for (_a = (e_7 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(logResult.data)), _b = _a.next(); !_b.done; _b = _a.next()) {
+                    logEntry = _b.value;
+                    matchingFunctions = mappings.get(logEntry.topic);
+
+                    if (matchingFunctions === undefined) {
+                      continue;
+                    }
+
+                    try {
+                      for (matchingFunctions_2 = (e_8 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(matchingFunctions)), matchingFunctions_2_1 = matchingFunctions_2.next(); !matchingFunctions_2_1.done; matchingFunctions_2_1 = matchingFunctions_2.next()) {
+                        matchingFunction = matchingFunctions_2_1.value;
+                        msg = logEntry.msg;
+
+                        if (msg === undefined) {
+                          msg = '';
+                        }
+
+                        if (target.messageFrom !== undefined && target.messageFrom !== '' && matchingFunction.type === target.messageFrom) {
+                          lastMsg.set(matchingFunction.meta['device_id'], logEntry.msg);
+                          continue;
+                        } else if (target.messageFrom !== undefined && target.messageFrom !== '') {
+                          tmpMsg = lastMsg.get(matchingFunction.meta['device_id']);
+
+                          if (tmpMsg !== undefined) {
+                            msg = tmpMsg;
+                          } else {
+                            continue;
+                          }
+                        }
+
+                        group = String(matchingFunction.id);
+
+                        if (target.groupBy !== undefined && target.groupBy !== '') {
+                          tmpGroup = matchingFunction.meta[target.groupBy];
+
+                          if (tmpGroup === undefined) {
+                            tmpGroup = msg;
+                          }
+
+                          group = tmpGroup;
+                        } // Naming
+
+
+                        if (!target.nameBy) {
+                          target.nameBy = 'name';
+                        }
+
+                        targetDatapointsName.set(group, matchingFunction.meta[target.nameBy]);
+                        dps = targetDatapoints.get(group);
+
+                        if (dps === undefined) {
+                          dps = [];
+                          targetDatapoints.set(group, dps);
+                        }
+
+                        dat = new Date(logEntry.timestamp * 1000);
+                        dps.push([dat.toISOString(), matchingFunction.meta[target.nameBy], logEntry.value, msg]);
+                      }
+                    } catch (e_8_1) {
+                      e_8 = {
+                        error: e_8_1
+                      };
+                    } finally {
+                      try {
+                        if (matchingFunctions_2_1 && !matchingFunctions_2_1.done && (_e = matchingFunctions_2["return"])) _e.call(matchingFunctions_2);
+                      } finally {
+                        if (e_8) throw e_8.error;
+                      }
+                    }
+                  }
+                } catch (e_7_1) {
+                  e_7 = {
+                    error: e_7_1
+                  };
+                } finally {
+                  try {
+                    if (_b && !_b.done && (_d = _a["return"])) _d.call(_a);
+                  } finally {
+                    if (e_7) throw e_7.error;
+                  }
+                }
+              }
+            } catch (e_6_1) {
+              e_6 = {
+                error: e_6_1
+              };
+            } finally {
+              try {
+                if (results_2_1 && !results_2_1.done && (_c = results_2["return"])) _c.call(results_2);
+              } finally {
+                if (e_6) throw e_6.error;
+              }
+            }
+
+            targetDatapoints.forEach(function (value, key) {
+              //console.log(key);
+              var dp = {
+                name: targetDatapointsName.get(key),
+                columns: [{
+                  text: 'Time'
+                }, {
+                  text: 'name'
+                }, {
+                  text: 'value'
+                }, {
+                  text: 'msg'
+                }],
+                rows: value,
+                refId: target.refId
+              };
+              targetData.push(dp);
+            });
+            return [2
+            /*return*/
+            , targetData];
+        }
+      });
+    });
+  };
+
   DataSource.prototype.query = function (options) {
     return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
-      var range, from, to, targets, seriesList, targets_1, targets_1_1, target, targetDatapoints, functions, mappings, topics, results, offset, logResult, results_1, results_1_1, logResult, _a, _b, logEntry, matchingFunctions, matchingFunctions_1, matchingFunctions_1_1, matchingFunction, name_1, dps, e_1_1;
+      var range, from, to, targets, response, jobs, targets_1, targets_1_1, target, job, job, data, data_1, data_1_1, series, series_1, series_1_1, serie;
 
-      var e_1, _c, e_2, _d, e_3, _e, e_4, _f;
+      var e_9, _a, e_10, _b, e_11, _c;
 
-      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_g) {
-        switch (_g.label) {
+      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_d) {
+        switch (_d.label) {
           case 0:
             range = options.range;
 
@@ -553,171 +977,82 @@ function (_super) {
             targets = options.targets.filter(function (target) {
               return !target.hide;
             });
-            seriesList = [];
-            _g.label = 1;
+            response = {
+              data: []
+            };
+            jobs = [];
 
-          case 1:
-            _g.trys.push([1, 9, 10, 11]);
-
-            targets_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(targets), targets_1_1 = targets_1.next();
-            _g.label = 2;
-
-          case 2:
-            if (!!targets_1_1.done) return [3
-            /*break*/
-            , 8];
-            target = targets_1_1.value;
-            targetDatapoints = new Map();
-            return [4
-            /*yield*/
-            , this.fetchFilteredFunctions(target.installationId, target.meta)];
-
-          case 3:
-            functions = _g.sent();
-            mappings = this.createLogTopicMappings(target.clientId, functions);
-            topics = Array.from(mappings.keys());
-
-            if (topics.length === 0) {
-              return [3
-              /*break*/
-              , 7];
-            }
-
-            results = new Array();
-            offset = 0;
-            _g.label = 4;
-
-          case 4:
-            if (false) {}
-            return [4
-            /*yield*/
-            , this.fetchLog(target.installationId, from / 1000, to / 1000, offset, topics)];
-
-          case 5:
-            logResult = _g.sent();
-            results.push(logResult);
-            offset += logResult.count;
-
-            if (offset >= logResult.total) {
-              return [3
-              /*break*/
-              , 6];
-            }
-
-            return [3
-            /*break*/
-            , 4];
-
-          case 6:
             try {
-              for (results_1 = (e_2 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(results)), results_1_1 = results_1.next(); !results_1_1.done; results_1_1 = results_1.next()) {
-                logResult = results_1_1.value;
+              for (targets_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(targets), targets_1_1 = targets_1.next(); !targets_1_1.done; targets_1_1 = targets_1.next()) {
+                target = targets_1_1.value;
 
-                try {
-                  for (_a = (e_3 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(logResult.data)), _b = _a.next(); !_b.done; _b = _a.next()) {
-                    logEntry = _b.value;
-                    matchingFunctions = mappings.get(logEntry.topic);
-
-                    if (matchingFunctions === undefined) {
-                      continue;
-                    }
-
-                    try {
-                      for (matchingFunctions_1 = (e_4 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(matchingFunctions)), matchingFunctions_1_1 = matchingFunctions_1.next(); !matchingFunctions_1_1.done; matchingFunctions_1_1 = matchingFunctions_1.next()) {
-                        matchingFunction = matchingFunctions_1_1.value;
-                        name_1 = matchingFunction.meta['name'];
-                        dps = targetDatapoints.get(name_1);
-
-                        if (dps === undefined) {
-                          dps = [];
-                          targetDatapoints.set(name_1, dps);
-                        }
-
-                        dps.push([logEntry.value, logEntry.timestamp * 1000]);
-                      }
-                    } catch (e_4_1) {
-                      e_4 = {
-                        error: e_4_1
-                      };
-                    } finally {
-                      try {
-                        if (matchingFunctions_1_1 && !matchingFunctions_1_1.done && (_f = matchingFunctions_1["return"])) _f.call(matchingFunctions_1);
-                      } finally {
-                        if (e_4) throw e_4.error;
-                      }
-                    }
-                  }
-                } catch (e_3_1) {
-                  e_3 = {
-                    error: e_3_1
-                  };
-                } finally {
-                  try {
-                    if (_b && !_b.done && (_e = _a["return"])) _e.call(_a);
-                  } finally {
-                    if (e_3) throw e_3.error;
-                  }
+                if (target.tabledata) {
+                  job = this.queryTableData(target, from, to);
+                  jobs.push(job);
+                } else {
+                  job = this.queryTimeSeries(target, from, to);
+                  jobs.push(job);
                 }
               }
-            } catch (e_2_1) {
-              e_2 = {
-                error: e_2_1
+            } catch (e_9_1) {
+              e_9 = {
+                error: e_9_1
               };
             } finally {
               try {
-                if (results_1_1 && !results_1_1.done && (_d = results_1["return"])) _d.call(results_1);
+                if (targets_1_1 && !targets_1_1.done && (_a = targets_1["return"])) _a.call(targets_1);
               } finally {
-                if (e_2) throw e_2.error;
+                if (e_9) throw e_9.error;
               }
             }
 
-            targetDatapoints.forEach(function (value, key) {
-              var dp = {
-                target: key,
-                datapoints: value
-              };
-              console.log(dp);
-              seriesList.push(dp);
-            });
-            _g.label = 7;
+            return [4
+            /*yield*/
+            , Promise.all(jobs)];
 
-          case 7:
-            targets_1_1 = targets_1.next();
-            return [3
-            /*break*/
-            , 2];
+          case 1:
+            data = _d.sent();
 
-          case 8:
-            return [3
-            /*break*/
-            , 11];
-
-          case 9:
-            e_1_1 = _g.sent();
-            e_1 = {
-              error: e_1_1
-            };
-            return [3
-            /*break*/
-            , 11];
-
-          case 10:
             try {
-              if (targets_1_1 && !targets_1_1.done && (_c = targets_1["return"])) _c.call(targets_1);
+              for (data_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(data), data_1_1 = data_1.next(); !data_1_1.done; data_1_1 = data_1.next()) {
+                series = data_1_1.value;
+
+                if (series === null) {
+                  continue;
+                }
+
+                try {
+                  for (series_1 = (e_11 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(series)), series_1_1 = series_1.next(); !series_1_1.done; series_1_1 = series_1.next()) {
+                    serie = series_1_1.value;
+                    response.data.push(serie);
+                  }
+                } catch (e_11_1) {
+                  e_11 = {
+                    error: e_11_1
+                  };
+                } finally {
+                  try {
+                    if (series_1_1 && !series_1_1.done && (_c = series_1["return"])) _c.call(series_1);
+                  } finally {
+                    if (e_11) throw e_11.error;
+                  }
+                }
+              }
+            } catch (e_10_1) {
+              e_10 = {
+                error: e_10_1
+              };
             } finally {
-              if (e_1) throw e_1.error;
+              try {
+                if (data_1_1 && !data_1_1.done && (_b = data_1["return"])) _b.call(data_1);
+              } finally {
+                if (e_10) throw e_10.error;
+              }
             }
 
-            return [7
-            /*endfinally*/
-            ];
-
-          case 11:
             return [2
             /*return*/
-            , {
-              data: seriesList
-            }];
+            , response];
         }
       });
     });
@@ -836,7 +1171,6 @@ function (_super) {
 
     _this.onMetaUpdate = function (idx, key, value) {
       var _a = _this.props,
-          onRunQuery = _a.onRunQuery,
           onChange = _a.onChange,
           query = _a.query;
       query.meta[idx].key = key;
@@ -845,26 +1179,56 @@ function (_super) {
         meta: query.meta
       }));
 
-      if (_this.state.ticker) {
-        clearTimeout(_this.state.ticker);
-        var tmp = setTimeout(function () {
-          onRunQuery();
-        }, 250);
-
-        _this.setState({
-          ticker: tmp
-        });
-      } else {
-        var tmp = setTimeout(function () {
-          onRunQuery();
-        }, 250);
-
-        _this.setState({
-          ticker: tmp
-        });
-      }
+      _this.onRunQuery();
     };
 
+    _this.onDatatable = function () {
+      var _a = _this.props,
+          onChange = _a.onChange,
+          query = _a.query;
+      onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
+        tabledata: !query.tabledata
+      }));
+
+      _this.props.onRunQuery();
+    };
+
+    _this.onMessageChange = function (event) {
+      var _a = _this.props,
+          onChange = _a.onChange,
+          query = _a.query;
+      onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
+        messageFrom: event.target.value
+      }));
+
+      _this.onRunQuery();
+    };
+
+    _this.onGroupByChange = function (event) {
+      var _a = _this.props,
+          onChange = _a.onChange,
+          query = _a.query;
+      onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
+        groupBy: event.target.value
+      }));
+
+      _this.onRunQuery();
+    };
+
+    _this.onNameByChange = function (event) {
+      var _a = _this.props,
+          onChange = _a.onChange,
+          query = _a.query;
+      onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
+        nameBy: event.target.value
+      }));
+
+      _this.onRunQuery();
+    };
+
+    _this.tooltipGroupBy = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "Group series by some meta key or payload ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "msg"), " field. Defaults to Function ID.");
+    _this.tooltipNameBy = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "This will name series based on some meta key.", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("br", null), "Defaults to ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "name"), ".");
+    _this.tooltipMessageFrom = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "Using this field will join matching functions with the same filter, but the type changed to this field. The msg field will be overwritten by messages matching this type, linked through ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "device_id"), " meta key. Useful for eg. joining positional data. ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("br", null), "This field is only applied on table data.");
     _this.state = {
       installations: [],
       functions: [],
@@ -909,6 +1273,27 @@ function (_super) {
     });
   };
 
+  QueryEditor.prototype.onRunQuery = function () {
+    var _this = this;
+
+    if (this.state.ticker) {
+      clearTimeout(this.state.ticker);
+      var tmp = setTimeout(function () {
+        _this.props.onRunQuery();
+      }, 250);
+      this.setState({
+        ticker: tmp
+      });
+    } else {
+      var tmp = setTimeout(function () {
+        _this.props.onRunQuery();
+      }, 250);
+      this.setState({
+        ticker: tmp
+      });
+    }
+  };
+
   QueryEditor.prototype.render = function () {
     var _this = this;
 
@@ -921,7 +1306,9 @@ function (_super) {
       }];
     }
 
-    return react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", null, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+    return react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+      className: 'section gf-form-group'
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: 'gf-form-inline'
     }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormLabel"], {
       className: 'query-keyword'
@@ -945,9 +1332,42 @@ function (_super) {
         onDelete: _this.onMetaDelete,
         onUpdate: _this.onMetaUpdate
       });
-    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Button"], {
+    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+      className: 'gf-form-inline',
+      style: {
+        paddingBottom: 10
+      }
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Button"], {
       onClick: this.addFilter
-    }, "Add filter"));
+    }, "Add filter")), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+      className: 'gf-form-inline'
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormField"], {
+      labelWidth: 40,
+      label: 'Group by',
+      onChange: this.onGroupByChange,
+      value: query.groupBy,
+      tooltip: this.tooltipGroupBy
+    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormField"], {
+      labelWidth: 40,
+      label: 'Name by',
+      onChange: this.onNameByChange,
+      value: query.nameBy,
+      tooltip: this.tooltipNameBy
+    })), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+      className: 'gf-form-inline'
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Switch"], {
+      label: 'As table data',
+      checked: query.tabledata,
+      onChange: this.onDatatable
+    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+      hidden: !query.tabledata
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormField"], {
+      labelWidth: 40,
+      label: 'Message from',
+      onChange: this.onMessageChange,
+      value: query.messageFrom,
+      tooltip: this.tooltipMessageFrom
+    }))));
   };
 
   return QueryEditor;
