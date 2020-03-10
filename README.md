@@ -32,6 +32,13 @@ Series will be grouped by all matching functions.
 Make sure docker daemon is up and running.
 There is a script ```./grafana-dev.sh``` that starts a grafana 6.6.2 server and maps the dist dir into grafa plugins.
 
-It automatically installs grafana-piechart-panel and grafana-worldmap-panel plugins too.
+It automatically installs following plugins: 
+* grafana-piechart-panel 
+* grafana-worldmap-panel
+* pr0ps-trackmap-panel
 
 Make sure to run the script in the git root directory.
+
+Default username password is ```admin```:```helloworld``` and server is running on http://localhost:3000
+
+
