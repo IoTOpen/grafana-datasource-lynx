@@ -33,3 +33,5 @@ Make sure docker daemon is up and running.
 There is a script ```./grafana-dev.sh``` that starts a grafana 6.6.2 server and maps the dist dir into grafa plugins.
 
 It automatically installs grafana-piechart-panel and grafana-worldmap-panel plugins too.
+
+Make sure to run the script in the git root directory.
