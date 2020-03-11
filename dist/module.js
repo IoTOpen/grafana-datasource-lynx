@@ -908,7 +908,6 @@ function (_super) {
 
           case 5:
             results = _a;
-            console.log(functions);
             lastMsg = new Map();
 
             try {
@@ -1032,7 +1031,6 @@ function (_super) {
                 rows: value,
                 refId: target.refId
               };
-              console.log(dp);
               targetData.push(dp);
             });
             return [2

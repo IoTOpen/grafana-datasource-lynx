@@ -248,7 +248,6 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     const results = target.stateOnly
       ? await this.fetchState(target.installationId, topics)
       : await this.fetchLogFull(target.installationId, from, to, topics);
-    console.log(functions);
     const lastMsg = new Map<string, string>();
     for (const logResult of results) {
       for (const logEntry of logResult.data) {
@@ -311,7 +310,6 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         rows: value,
         refId: target.refId,
       };
-      console.log(dp);
       targetData.push(dp);
     });
     return targetData;
