@@ -7,6 +7,7 @@ export interface MyQuery extends DataQuery {
   meta: any[];
   tabledata: boolean;
   stateOnly: boolean;
+  linkKey: string;
   messageFrom: string;
   groupBy: string;
   nameBy: string;

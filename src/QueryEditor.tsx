@@ -104,6 +104,12 @@ export class QueryEditor extends PureComponent<Props, State> {
     this.onRunQuery();
   };
 
+  onLinkChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, linkKey: event.target.value });
+    this.onRunQuery();
+  };
+
   onStateOnlyChange = (): void => {
     const { onChange, query } = this.props;
     onChange({ ...query, stateOnly: !query.stateOnly });
@@ -178,6 +184,7 @@ export class QueryEditor extends PureComponent<Props, State> {
               value={query.messageFrom}
               tooltip={this.tooltipMessageFrom}
             />
+            <FormField labelWidth={40} label={'Linked with'} onChange={this.onLinkChange} value={query.linkKey} />
           </div>
         </div>
         <Switch label={'Current state only'} checked={query.stateOnly} onChange={this.onStateOnlyChange} />

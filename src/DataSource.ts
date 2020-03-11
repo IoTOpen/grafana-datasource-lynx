@@ -261,11 +261,15 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           if (msg === undefined) {
             msg = '';
           }
+          let link = target.linkKey;
+          if (link === undefined || link === '') {
+            link = 'device_id';
+          }
           if (target.messageFrom !== undefined && target.messageFrom !== '' && matchingFunction.type === target.messageFrom) {
-            lastMsg.set(matchingFunction.meta['device_id'], logEntry.msg);
+            lastMsg.set(matchingFunction.meta[link], logEntry.msg);
             continue;
           } else if (target.messageFrom !== undefined && target.messageFrom !== '') {
-            const tmpMsg = lastMsg.get(matchingFunction.meta['device_id']);
+            const tmpMsg = lastMsg.get(matchingFunction.meta[link]);
             if (tmpMsg !== undefined) {
               msg = tmpMsg;
             } else {
