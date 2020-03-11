@@ -859,7 +859,7 @@ function (_super) {
 
   DataSource.prototype.queryTableData = function (target, from, to) {
     return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
-      var targetData, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, _a, lastMsg, results_2, results_2_1, logResult, _b, _c, logEntry, matchingFunctions, matchingFunctions_2, matchingFunctions_2_1, matchingFunction, msg, tmpMsg, group, tmpGroup, dps, dat, row;
+      var targetData, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, _a, lastMsg, results_2, results_2_1, logResult, _b, _c, logEntry, matchingFunctions, matchingFunctions_2, matchingFunctions_2_1, matchingFunction, msg, link, tmpMsg, group, tmpGroup, dps, dat, row;
 
       var e_6, _d, e_7, _e, e_8, _f;
 
@@ -933,11 +933,17 @@ function (_super) {
                           msg = '';
                         }
 
+                        link = target.linkKey;
+
+                        if (link === undefined || link === '') {
+                          link = 'device_id';
+                        }
+
                         if (target.messageFrom !== undefined && target.messageFrom !== '' && matchingFunction.type === target.messageFrom) {
-                          lastMsg.set(matchingFunction.meta['device_id'], logEntry.msg);
+                          lastMsg.set(matchingFunction.meta[link], logEntry.msg);
                           continue;
                         } else if (target.messageFrom !== undefined && target.messageFrom !== '') {
-                          tmpMsg = lastMsg.get(matchingFunction.meta['device_id']);
+                          tmpMsg = lastMsg.get(matchingFunction.meta[link]);
 
                           if (tmpMsg !== undefined) {
                             msg = tmpMsg;
@@ -1295,6 +1301,17 @@ function (_super) {
       _this.onRunQuery();
     };
 
+    _this.onLinkChange = function (event) {
+      var _a = _this.props,
+          onChange = _a.onChange,
+          query = _a.query;
+      onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
+        linkKey: event.target.value
+      }));
+
+      _this.onRunQuery();
+    };
+
     _this.onStateOnlyChange = function () {
       var _a = _this.props,
           onChange = _a.onChange,
@@ -1458,6 +1475,11 @@ function (_super) {
       onChange: this.onMessageChange,
       value: query.messageFrom,
       tooltip: this.tooltipMessageFrom
+    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormField"], {
+      labelWidth: 40,
+      label: 'Linked with',
+      onChange: this.onLinkChange,
+      value: query.linkKey
     }))), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Switch"], {
       label: 'Current state only',
       checked: query.stateOnly,
