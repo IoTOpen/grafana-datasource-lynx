@@ -545,6 +545,48 @@ function (_super) {
     });
   };
 
+  DataSource.prototype.fetchState = function (installationId, topics) {
+    var url = this.settings.jsonData.url + "/api/v2/status/" + installationId;
+    var queryParams = {};
+
+    if (topics) {
+      queryParams['topics'] = topics.join(',');
+    }
+
+    var queryString = '?' + Object.keys(queryParams).map(function (key) {
+      return encodeURIComponent(key) + '=' + encodeURIComponent(queryParams[key]);
+    }).join('&');
+    return fetch(url + queryString, {
+      headers: {
+        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey)
+      }
+    }).then(function (result) {
+      return result.json();
+    }).then(function (obj) {
+      var res = {
+        total: obj.length,
+        count: obj.length,
+        last: 0,
+        data: obj.map(function (ent) {
+          return {
+            timestamp: ent.timestamp,
+            client_id: ent.client_id,
+            installation_id: ent.installation_id,
+            topic: ent.client_id + "/" + ent.topic,
+            value: ent.value,
+            msg: ent.msg
+          };
+        })
+      };
+
+      if (obj.length > 0) {
+        res.last = obj[obj.length - 1].timestamp;
+      }
+
+      return [res];
+    });
+  };
+
   DataSource.prototype.fetchLogFull = function (installationId, from, to, topics) {
     return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
       var results, offset, logResult;
@@ -666,12 +708,12 @@ function (_super) {
 
   DataSource.prototype.queryTimeSeries = function (target, from, to) {
     return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
-      var seriesList, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, results_1, results_1_1, logResult, _a, _b, logEntry, matchingFunctions, matchingFunctions_1, matchingFunctions_1_1, matchingFunction, group, tmpGroup, dps;
+      var seriesList, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, _a, results_1, results_1_1, logResult, _b, _c, logEntry, matchingFunctions, matchingFunctions_1, matchingFunctions_1_1, matchingFunction, group, tmpGroup, dps;
 
-      var e_3, _c, e_4, _d, e_5, _e;
+      var e_3, _d, e_4, _e, e_5, _f;
 
-      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_f) {
-        switch (_f.label) {
+      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_g) {
+        switch (_g.label) {
           case 0:
             seriesList = [];
             targetDatapoints = new Map();
@@ -681,7 +723,7 @@ function (_super) {
             , this.fetchFilteredFunctions(target.installationId, target.meta)];
 
           case 1:
-            functions = _f.sent();
+            functions = _g.sent();
             mappings = this.createLogTopicMappings(target.clientId, functions);
             topics = Array.from(mappings.keys());
 
@@ -691,20 +733,38 @@ function (_super) {
               , null];
             }
 
+            if (!target.stateOnly) return [3
+            /*break*/
+            , 3];
+            return [4
+            /*yield*/
+            , this.fetchState(target.installationId, topics)];
+
+          case 2:
+            _a = _g.sent();
+            return [3
+            /*break*/
+            , 5];
+
+          case 3:
             return [4
             /*yield*/
             , this.fetchLogFull(target.installationId, from, to, topics)];
 
-          case 2:
-            results = _f.sent();
+          case 4:
+            _a = _g.sent();
+            _g.label = 5;
+
+          case 5:
+            results = _a;
 
             try {
               for (results_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(results), results_1_1 = results_1.next(); !results_1_1.done; results_1_1 = results_1.next()) {
                 logResult = results_1_1.value;
 
                 try {
-                  for (_a = (e_4 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(logResult.data)), _b = _a.next(); !_b.done; _b = _a.next()) {
-                    logEntry = _b.value;
+                  for (_b = (e_4 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(logResult.data)), _c = _b.next(); !_c.done; _c = _b.next()) {
+                    logEntry = _c.value;
                     matchingFunctions = mappings.get(logEntry.topic);
 
                     if (matchingFunctions === undefined) {
@@ -745,7 +805,7 @@ function (_super) {
                       };
                     } finally {
                       try {
-                        if (matchingFunctions_1_1 && !matchingFunctions_1_1.done && (_e = matchingFunctions_1["return"])) _e.call(matchingFunctions_1);
+                        if (matchingFunctions_1_1 && !matchingFunctions_1_1.done && (_f = matchingFunctions_1["return"])) _f.call(matchingFunctions_1);
                       } finally {
                         if (e_5) throw e_5.error;
                       }
@@ -757,7 +817,7 @@ function (_super) {
                   };
                 } finally {
                   try {
-                    if (_b && !_b.done && (_d = _a["return"])) _d.call(_a);
+                    if (_c && !_c.done && (_e = _b["return"])) _e.call(_b);
                   } finally {
                     if (e_4) throw e_4.error;
                   }
@@ -769,7 +829,7 @@ function (_super) {
               };
             } finally {
               try {
-                if (results_1_1 && !results_1_1.done && (_c = results_1["return"])) _c.call(results_1);
+                if (results_1_1 && !results_1_1.done && (_d = results_1["return"])) _d.call(results_1);
               } finally {
                 if (e_3) throw e_3.error;
               }
@@ -799,12 +859,12 @@ function (_super) {
 
   DataSource.prototype.queryTableData = function (target, from, to) {
     return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
-      var targetData, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, lastMsg, results_2, results_2_1, logResult, _a, _b, logEntry, matchingFunctions, matchingFunctions_2, matchingFunctions_2_1, matchingFunction, msg, tmpMsg, group, tmpGroup, dps, dat;
+      var targetData, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, _a, lastMsg, results_2, results_2_1, logResult, _b, _c, logEntry, matchingFunctions, matchingFunctions_2, matchingFunctions_2_1, matchingFunction, msg, tmpMsg, group, tmpGroup, dps, dat, row;
 
-      var e_6, _c, e_7, _d, e_8, _e;
+      var e_6, _d, e_7, _e, e_8, _f;
 
-      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_f) {
-        switch (_f.label) {
+      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_g) {
+        switch (_g.label) {
           case 0:
             targetData = [];
             targetDatapoints = new Map();
@@ -814,7 +874,7 @@ function (_super) {
             , this.fetchQueriedFunctions(target)];
 
           case 1:
-            functions = _f.sent();
+            functions = _g.sent();
             mappings = this.createLogTopicMappings(target.clientId, functions);
             topics = Array.from(mappings.keys());
 
@@ -824,12 +884,31 @@ function (_super) {
               , null];
             }
 
+            if (!target.stateOnly) return [3
+            /*break*/
+            , 3];
+            return [4
+            /*yield*/
+            , this.fetchState(target.installationId, topics)];
+
+          case 2:
+            _a = _g.sent();
+            return [3
+            /*break*/
+            , 5];
+
+          case 3:
             return [4
             /*yield*/
             , this.fetchLogFull(target.installationId, from, to, topics)];
 
-          case 2:
-            results = _f.sent();
+          case 4:
+            _a = _g.sent();
+            _g.label = 5;
+
+          case 5:
+            results = _a;
+            console.log(functions);
             lastMsg = new Map();
 
             try {
@@ -837,8 +916,8 @@ function (_super) {
                 logResult = results_2_1.value;
 
                 try {
-                  for (_a = (e_7 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(logResult.data)), _b = _a.next(); !_b.done; _b = _a.next()) {
-                    logEntry = _b.value;
+                  for (_b = (e_7 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(logResult.data)), _c = _b.next(); !_c.done; _c = _b.next()) {
+                    logEntry = _c.value;
                     matchingFunctions = mappings.get(logEntry.topic);
 
                     if (matchingFunctions === undefined) {
@@ -880,7 +959,7 @@ function (_super) {
                         } // Naming
 
 
-                        if (!target.nameBy) {
+                        if (!target.nameBy || target.nameBy === '') {
                           target.nameBy = 'name';
                         }
 
@@ -893,7 +972,8 @@ function (_super) {
                         }
 
                         dat = new Date(logEntry.timestamp * 1000);
-                        dps.push([dat.toISOString(), matchingFunction.meta[target.nameBy], logEntry.value, msg]);
+                        row = [dat.toISOString(), matchingFunction.meta[target.nameBy], logEntry.value, msg];
+                        dps.push(row);
                       }
                     } catch (e_8_1) {
                       e_8 = {
@@ -901,7 +981,7 @@ function (_super) {
                       };
                     } finally {
                       try {
-                        if (matchingFunctions_2_1 && !matchingFunctions_2_1.done && (_e = matchingFunctions_2["return"])) _e.call(matchingFunctions_2);
+                        if (matchingFunctions_2_1 && !matchingFunctions_2_1.done && (_f = matchingFunctions_2["return"])) _f.call(matchingFunctions_2);
                       } finally {
                         if (e_8) throw e_8.error;
                       }
@@ -913,7 +993,7 @@ function (_super) {
                   };
                 } finally {
                   try {
-                    if (_b && !_b.done && (_d = _a["return"])) _d.call(_a);
+                    if (_c && !_c.done && (_e = _b["return"])) _e.call(_b);
                   } finally {
                     if (e_7) throw e_7.error;
                   }
@@ -925,14 +1005,13 @@ function (_super) {
               };
             } finally {
               try {
-                if (results_2_1 && !results_2_1.done && (_c = results_2["return"])) _c.call(results_2);
+                if (results_2_1 && !results_2_1.done && (_d = results_2["return"])) _d.call(results_2);
               } finally {
                 if (e_6) throw e_6.error;
               }
             }
 
             targetDatapoints.forEach(function (value, key) {
-              //console.log(key);
               var dp = {
                 name: targetDatapointsName.get(key),
                 columns: [{
@@ -947,6 +1026,7 @@ function (_super) {
                 rows: value,
                 refId: target.refId
               };
+              console.log(dp);
               targetData.push(dp);
             });
             return [2
@@ -1182,17 +1262,6 @@ function (_super) {
       _this.onRunQuery();
     };
 
-    _this.onDatatable = function () {
-      var _a = _this.props,
-          onChange = _a.onChange,
-          query = _a.query;
-      onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
-        tabledata: !query.tabledata
-      }));
-
-      _this.props.onRunQuery();
-    };
-
     _this.onMessageChange = function (event) {
       var _a = _this.props,
           onChange = _a.onChange,
@@ -1224,6 +1293,28 @@ function (_super) {
       }));
 
       _this.onRunQuery();
+    };
+
+    _this.onStateOnlyChange = function () {
+      var _a = _this.props,
+          onChange = _a.onChange,
+          query = _a.query;
+      onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
+        stateOnly: !query.stateOnly
+      }));
+
+      _this.props.onRunQuery();
+    };
+
+    _this.onDatatable = function () {
+      var _a = _this.props,
+          onChange = _a.onChange,
+          query = _a.query;
+      onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
+        tabledata: !query.tabledata
+      }));
+
+      _this.props.onRunQuery();
     };
 
     _this.tooltipGroupBy = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "Group series by some meta key or payload ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "msg"), " field. Defaults to Function ID.");
@@ -1367,7 +1458,11 @@ function (_super) {
       onChange: this.onMessageChange,
       value: query.messageFrom,
       tooltip: this.tooltipMessageFrom
-    }))));
+    }))), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Switch"], {
+      label: 'Current state only',
+      checked: query.stateOnly,
+      onChange: this.onStateOnlyChange
+    }));
   };
 
   return QueryEditor;
