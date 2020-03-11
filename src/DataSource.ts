@@ -100,6 +100,46 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       });
   }
 
+  fetchState(installationId: number, topics?: string[]): Promise<LogResult[]> {
+    const url = `${this.settings.jsonData.url}/api/v2/status/${installationId}`;
+    const queryParams = {};
+    if (topics) {
+      queryParams['topics'] = topics.join(',');
+    }
+    const queryString =
+      '?' +
+      Object.keys(queryParams)
+        .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(queryParams[key]))
+        .join('&');
+    return fetch(url + queryString, {
+      headers: {
+        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
+      },
+    })
+      .then(result => result.json())
+      .then(obj => {
+        const res: LogResult = {
+          total: obj.length,
+          count: obj.length,
+          last: 0,
+          data: obj.map(ent => {
+            return {
+              timestamp: ent.timestamp,
+              client_id: ent.client_id,
+              installation_id: ent.installation_id,
+              topic: `${ent.client_id}/${ent.topic}`,
+              value: ent.value,
+              msg: ent.msg,
+            };
+          }),
+        };
+        if (obj.length > 0) {
+          res.last = obj[obj.length - 1].timestamp;
+        }
+        return [res];
+      });
+  }
+
   async fetchLogFull(installationId: number, from: number, to: number, topics: string[]): Promise<LogResult[]> {
     const results = new Array<LogResult>();
     let offset = 0;
@@ -144,7 +184,9 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     if (topics.length === 0) {
       return null;
     }
-    const results = await this.fetchLogFull(target.installationId, from, to, topics);
+    const results = target.stateOnly
+      ? await this.fetchState(target.installationId, topics)
+      : await this.fetchLogFull(target.installationId, from, to, topics);
 
     for (const logResult of results) {
       for (const logEntry of logResult.data) {
@@ -166,7 +208,6 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
             dps = [];
             targetDatapoints.set(group, dps);
           }
-
           // Naming
           if (!target.nameBy || target.nameBy === '') {
             target.nameBy = 'name';
@@ -204,8 +245,10 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     if (topics.length === 0) {
       return null;
     }
-    const results = await this.fetchLogFull(target.installationId, from, to, topics);
-
+    const results = target.stateOnly
+      ? await this.fetchState(target.installationId, topics)
+      : await this.fetchLogFull(target.installationId, from, to, topics);
+    console.log(functions);
     const lastMsg = new Map<string, string>();
     for (const logResult of results) {
       for (const logEntry of logResult.data) {
@@ -240,7 +283,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           }
 
           // Naming
-          if (!target.nameBy) {
+          if (!target.nameBy || target.nameBy === '') {
             target.nameBy = 'name';
           }
           targetDatapointsName.set(group, matchingFunction.meta[target.nameBy]);
@@ -252,18 +295,19 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           }
 
           const dat = new Date(logEntry.timestamp * 1000);
-          dps.push([dat.toISOString(), matchingFunction.meta[target.nameBy], logEntry.value, msg]);
+          const row = [dat.toISOString(), matchingFunction.meta[target.nameBy], logEntry.value, msg];
+          dps.push(row);
         }
       }
     }
     targetDatapoints.forEach((value, key) => {
-      //console.log(key);
       const dp: TableData = {
         name: targetDatapointsName.get(key),
         columns: [{ text: 'Time' }, { text: 'name' }, { text: 'value' }, { text: 'msg' }],
         rows: value,
         refId: target.refId,
       };
+      console.log(dp);
       targetData.push(dp);
     });
     return targetData;

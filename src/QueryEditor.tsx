@@ -71,12 +71,6 @@ export class QueryEditor extends PureComponent<Props, State> {
     this.onRunQuery();
   };
 
-  onDatatable = (): void => {
-    const { onChange, query } = this.props;
-    onChange({ ...query, tabledata: !query.tabledata });
-    this.props.onRunQuery();
-  };
-
   onRunQuery() {
     if (this.state.ticker) {
       clearTimeout(this.state.ticker);
@@ -108,6 +102,18 @@ export class QueryEditor extends PureComponent<Props, State> {
     const { onChange, query } = this.props;
     onChange({ ...query, nameBy: event.target.value });
     this.onRunQuery();
+  };
+
+  onStateOnlyChange = (): void => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, stateOnly: !query.stateOnly });
+    this.props.onRunQuery();
+  };
+
+  onDatatable = (): void => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, tabledata: !query.tabledata });
+    this.props.onRunQuery();
   };
 
   tooltipGroupBy = (
@@ -174,6 +180,7 @@ export class QueryEditor extends PureComponent<Props, State> {
             />
           </div>
         </div>
+        <Switch label={'Current state only'} checked={query.stateOnly} onChange={this.onStateOnlyChange} />
       </div>
     );
   }
