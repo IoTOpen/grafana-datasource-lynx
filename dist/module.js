@@ -352,6 +352,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+var FormField = _grafana_ui__WEBPACK_IMPORTED_MODULE_2__["LegacyForms"].FormField;
 
 var ConfigEditor =
 /** @class */
@@ -401,7 +402,7 @@ function (_super) {
       className: "gf-form-group"
     }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: "gf-form"
-    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_2__["FormField"], {
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(FormField, {
       label: "URL",
       inputWidth: 24,
       labelWidth: 6,
@@ -410,7 +411,7 @@ function (_super) {
       placeholder: "https://aam.iotopen.se"
     })), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: "gf-form"
-    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_2__["FormField"], {
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(FormField, {
       label: "API Key",
       inputWidth: 24,
       labelWidth: 6,
@@ -588,7 +589,7 @@ function (_super) {
   };
 
   DataSource.prototype.fetchLogFull = function (installationId, from, to, topics) {
-    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
+    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, Promise, function () {
       var results, offset, logResult;
       return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_a) {
         switch (_a.label) {
@@ -628,7 +629,7 @@ function (_super) {
   };
 
   DataSource.prototype.fetchQueriedFunctions = function (target) {
-    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
+    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, Promise, function () {
       var functions, messageMeta, _a, _b, originalFilter, tmp, tmp_1, tmp_1_1, fn;
 
       var e_1, _c, e_2, _d;
@@ -707,7 +708,7 @@ function (_super) {
   };
 
   DataSource.prototype.queryTimeSeries = function (target, from, to) {
-    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
+    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, Promise, function () {
       var seriesList, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, _a, results_1, results_1_1, logResult, _b, _c, logEntry, matchingFunctions, matchingFunctions_1, matchingFunctions_1_1, matchingFunction, group, tmpGroup, dps;
 
       var e_3, _d, e_4, _e, e_5, _f;
@@ -858,7 +859,7 @@ function (_super) {
   };
 
   DataSource.prototype.queryTableData = function (target, from, to) {
-    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
+    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, Promise, function () {
       var targetData, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, _a, lastMsg, results_2, results_2_1, logResult, _b, _c, logEntry, matchingFunctions, matchingFunctions_2, matchingFunctions_2_1, matchingFunction, msg, link, tmpMsg, group, tmpGroup, dps, dat, row;
 
       var e_6, _d, e_7, _e, e_8, _f;
@@ -1042,7 +1043,7 @@ function (_super) {
   };
 
   DataSource.prototype.query = function (options) {
-    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, void 0, function () {
+    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, Promise, function () {
       var range, from, to, targets, response, jobs, targets_1, targets_1_1, target, job, job, data, data_1, data_1_1, series, series_1, series_1_1, serie;
 
       var e_9, _a, e_10, _b, e_11, _c;
@@ -1198,6 +1199,8 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+var FormField = _grafana_ui__WEBPACK_IMPORTED_MODULE_3__["LegacyForms"].FormField,
+    Switch = _grafana_ui__WEBPACK_IMPORTED_MODULE_3__["LegacyForms"].Switch;
 
 var QueryEditor =
 /** @class */
@@ -1416,7 +1419,7 @@ function (_super) {
       className: 'section gf-form-group'
     }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: 'gf-form-inline'
-    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormLabel"], {
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Label"], {
       className: 'query-keyword'
     }, "Installation"), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("select", {
       onChange: this.onSelectInstallation,
@@ -1447,13 +1450,13 @@ function (_super) {
       onClick: this.addFilter
     }, "Add filter")), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: 'gf-form-inline'
-    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormField"], {
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(FormField, {
       labelWidth: 40,
       label: 'Group by',
       onChange: this.onGroupByChange,
       value: query.groupBy,
       tooltip: this.tooltipGroupBy
-    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormField"], {
+    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(FormField, {
       labelWidth: 40,
       label: 'Name by',
       onChange: this.onNameByChange,
@@ -1461,24 +1464,24 @@ function (_super) {
       tooltip: this.tooltipNameBy
     })), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: 'gf-form-inline'
-    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Switch"], {
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(Switch, {
       label: 'As table data',
       checked: query.tabledata,
       onChange: this.onDatatable
     }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       hidden: !query.tabledata
-    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormField"], {
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(FormField, {
       labelWidth: 40,
       label: 'Message from',
       onChange: this.onMessageChange,
       value: query.messageFrom,
       tooltip: this.tooltipMessageFrom
-    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["FormField"], {
+    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(FormField, {
       labelWidth: 40,
       label: 'Linked with',
       onChange: this.onLinkChange,
       value: query.linkKey
-    }))), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Switch"], {
+    }))), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(Switch, {
       label: 'Current state only',
       checked: query.stateOnly,
       onChange: this.onStateOnlyChange

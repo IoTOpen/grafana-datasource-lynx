@@ -25,10 +25,10 @@
     ],
     "screenshots": [],
     "version": "1.0.1",
-    "updated": "2020-03-11"
+    "updated": "2020-06-03"
   },
   "dependencies": {
-    "grafanaVersion": "6.6.x",
+    "grafanaVersion": "7.x.x",
     "plugins": []
   }
 }
