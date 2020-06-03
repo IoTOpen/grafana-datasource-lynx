@@ -1,6 +1,6 @@
 #!/bin/bash
 IMAGE="grafana"
-VERSION="6.6.2"
+VERSION="7.0.1"
 
 docker run --rm \
 	-e "GF_LOG_LEVEL=debug" \

@@ -3,7 +3,10 @@ import { DataSource } from './DataSource';
 import { MyQuery, MyDataSourceOptions } from './types';
 import { FilterEntry } from './components/FilterEntry';
 import { QueryEditorProps } from '@grafana/data';
-import { Button, FormField, FormLabel, Switch } from '@grafana/ui';
+import {LegacyForms, Label, Button} from "@grafana/ui";
+
+const {FormField, Switch} = LegacyForms;
+
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
@@ -151,7 +154,7 @@ export class QueryEditor extends PureComponent<Props, State> {
     return (
       <div className={'section gf-form-group'}>
         <div className={'gf-form-inline'}>
-          <FormLabel className={'query-keyword'}>Installation</FormLabel>
+          <Label className={'query-keyword'}>Installation</Label>
           <select onChange={this.onSelectInstallation} style={{ width: 330 }}>
             <option value={0}>Select installation</option>
             {this.state.installations.map(value => {
