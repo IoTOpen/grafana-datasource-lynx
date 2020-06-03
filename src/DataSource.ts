@@ -141,7 +141,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   }
 
   async fetchLogFull(installationId: number, from: number, to: number, topics: string[]): Promise<LogResult[]> {
-    const results = new Array<LogResult>();
+    const results: LogResult[] = [];
     let offset = 0;
     while (true) {
       const logResult = await this.fetchLog(installationId, from / 1000, to / 1000, offset, topics);
@@ -264,7 +264,11 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           if (link === undefined || link === '') {
             link = 'device_id';
           }
-          if (target.messageFrom !== undefined && target.messageFrom !== '' && matchingFunction.type === target.messageFrom) {
+          if (
+            target.messageFrom !== undefined &&
+            target.messageFrom !== '' &&
+            matchingFunction.type === target.messageFrom
+          ) {
             lastMsg.set(matchingFunction.meta[link], logEntry.msg);
             continue;
           } else if (target.messageFrom !== undefined && target.messageFrom !== '') {

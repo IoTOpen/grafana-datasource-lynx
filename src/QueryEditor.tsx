@@ -3,10 +3,9 @@ import { DataSource } from './DataSource';
 import { MyQuery, MyDataSourceOptions } from './types';
 import { FilterEntry } from './components/FilterEntry';
 import { QueryEditorProps } from '@grafana/data';
-import {LegacyForms, Label, Button} from "@grafana/ui";
+import { LegacyForms, Label, Button } from '@grafana/ui';
 
-const {FormField, Switch} = LegacyForms;
-
+const { FormField, Switch } = LegacyForms;
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
@@ -139,8 +138,9 @@ export class QueryEditor extends PureComponent<Props, State> {
   );
   tooltipMessageFrom = (
     <>
-      Using this field will join matching functions with the same filter, but the type changed to this field. The msg field will be overwritten by
-      messages matching this type, linked through <code>device_id</code> meta key. Useful for eg. joining positional data. <br />
+      Using this field will join matching functions with the same filter, but the type changed to this field. The msg
+      field will be overwritten by messages matching this type, linked through <code>device_id</code> meta key. Useful
+      for eg. joining positional data. <br />
       This field is only applied on table data.
     </>
   );
@@ -174,8 +174,20 @@ export class QueryEditor extends PureComponent<Props, State> {
           <Button onClick={this.addFilter}>Add filter</Button>
         </div>
         <div className={'gf-form-inline'}>
-          <FormField labelWidth={40} label={'Group by'} onChange={this.onGroupByChange} value={query.groupBy} tooltip={this.tooltipGroupBy} />
-          <FormField labelWidth={40} label={'Name by'} onChange={this.onNameByChange} value={query.nameBy} tooltip={this.tooltipNameBy} />
+          <FormField
+            labelWidth={40}
+            label={'Group by'}
+            onChange={this.onGroupByChange}
+            value={query.groupBy}
+            tooltip={this.tooltipGroupBy}
+          />
+          <FormField
+            labelWidth={40}
+            label={'Name by'}
+            onChange={this.onNameByChange}
+            value={query.nameBy}
+            tooltip={this.tooltipNameBy}
+          />
         </div>
         <div className={'gf-form-inline'}>
           <Switch label={'As table data'} checked={query.tabledata} onChange={this.onDatatable} />
