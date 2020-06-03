@@ -594,7 +594,7 @@ function (_super) {
       return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_a) {
         switch (_a.label) {
           case 0:
-            results = new Array();
+            results = [];
             offset = 0;
             _a.label = 1;
 
@@ -1565,7 +1565,7 @@ function (_super) {
       value: this.props.data.value,
       onChange: this.onChangeValue
     }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_2__["Button"], {
-      variant: 'danger',
+      variant: 'destructive',
       onClick: this.onDelete
     }, "X")));
   };
