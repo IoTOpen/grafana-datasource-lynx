@@ -29,7 +29,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   }
 
   fetchInstallations(): Promise<any> {
-    return fetch(this.settings.jsonData.url + '/api/v2/installationinfo/grafana/ds', {
+    return fetch(this.settings.jsonData.url + '/api/v2/installationinfo', {
       headers: {
         Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
       },
@@ -357,7 +357,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   testDatasource() {
     // Implement a health check for your data source.
     return new Promise((resolve, reject) => {
-      fetch(this.settings.jsonData.url + '/api/v2/installationinfo/grafana/ds', {
+      fetch(this.settings.jsonData.url + '/api/v2/installationinfo', {
         headers: {
           Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
         },
