@@ -469,7 +469,7 @@ function (_super) {
   };
 
   DataSource.prototype.fetchInstallations = function () {
-    return fetch(this.settings.jsonData.url + '/api/v2/installationinfo/grafana/ds', {
+    return fetch(this.settings.jsonData.url + '/api/v2/installationinfo', {
       headers: {
         Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey)
       }
@@ -1148,7 +1148,7 @@ function (_super) {
 
 
     return new Promise(function (resolve, reject) {
-      fetch(_this.settings.jsonData.url + '/api/v2/installationinfo/grafana/ds', {
+      fetch(_this.settings.jsonData.url + '/api/v2/installationinfo', {
         headers: {
           Authorization: 'Basic ' + btoa('grafana:' + _this.settings.jsonData.apiKey)
         }
