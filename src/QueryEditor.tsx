@@ -1,18 +1,20 @@
 import React, { PureComponent, ChangeEvent } from 'react';
 import { DataSource } from './DataSource';
-import { MyQuery, MyDataSourceOptions } from './types';
+import {MyQuery, MyDataSourceOptions, Installation} from './types';
 import { FilterEntry } from './components/FilterEntry';
-import { QueryEditorProps } from '@grafana/data';
-import { LegacyForms, Label, Button } from '@grafana/ui';
+import {QueryEditorProps, SelectableValue} from '@grafana/data';
+import {LegacyForms, Button, Select} from '@grafana/ui';
 
 const { FormField, Switch } = LegacyForms;
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
 interface State {
-  installations: any[];
+  installations: Installation[];
   functions: any[];
   ticker: any;
+  selectedInstallation: SelectableValue<Installation>;
+  loadingInstallations: boolean;
 }
 
 export class QueryEditor extends PureComponent<Props, State> {
@@ -21,34 +23,44 @@ export class QueryEditor extends PureComponent<Props, State> {
     this.state = {
       installations: [],
       functions: [],
+      selectedInstallation: {value:{id: 0,name:"", client_id:0}},
       ticker: null,
+      loadingInstallations: true,
     };
-  }
-
-  getClientIdByInstallation(installationId: number): number {
-    for (const installation of this.state.installations) {
-      if (installation.id === installationId) {
-        return installation.client_id;
-      }
-    }
-    return 0;
   }
 
   componentDidMount(): void {
     this.props.datasource.fetchInstallations().then(installations => {
-      this.setState({ installations: installations });
+      let selectedInstallation = {id: 0, client_id: 0, name:""};
+      if (installations.length > 0) {
+        selectedInstallation = installations[0];
+      }
+      if(this.props.query.installationId != 0) {
+        const tmp = installations.find(x => x.id === this.props.query.installationId);
+        if(tmp != null) {
+          selectedInstallation = tmp;
+        } else {
+          this.onSelectInstallation({value:selectedInstallation});
+        }
+      }
+      this.setState({ installations: installations, loadingInstallations: false, selectedInstallation: {value:selectedInstallation }});
     });
   }
 
-  onSelectInstallation = (event: ChangeEvent<HTMLSelectElement>) => {
-    const { onChange, query } = this.props;
-    const target = Number(event.target.value);
-    onChange({ ...query, installationId: target, clientId: this.getClientIdByInstallation(target) });
-    this.props.datasource.fetchFunctions(Number(event.target.value)).then(functions => {
-      this.setState({ functions: functions });
+  onSelectInstallation = (selected: SelectableValue<Installation>) => {
+    const {onChange, query} = this.props;
+    console.log(selected);
+    if(selected.value == null) {
+      return;
+    }
+    onChange({...query, installationId: selected.value.id, clientId: selected.value.client_id});
+    this.props.datasource.fetchFunctions(Number(selected.value.id)).then(functions => {
+      if(selected.value !== undefined){
+        this.setState({functions: functions, selectedInstallation: selected})
+        this.props.onRunQuery();
+      }
     });
-    this.props.onRunQuery();
-  };
+  }
 
   addFilter = () => {
     const { onChange, query } = this.props;
@@ -145,31 +157,38 @@ export class QueryEditor extends PureComponent<Props, State> {
     </>
   );
 
+  getInstallationOptionLabel(input: SelectableValue<Installation>): string {
+    if(input.value == null) {
+      return "";
+    }
+    return input.value.name;
+  }
+
   render() {
     const query = this.props.query as MyQuery;
     if (query.meta == null) {
+      query.installationId = 0;
+      query.clientId = 0;
       query.meta = [{ key: 'type', value: '' }];
     }
 
     return (
       <div className={'section gf-form-group'}>
         <div className={'gf-form-inline'}>
-          <Label className={'query-keyword'}>Installation</Label>
-          <select onChange={this.onSelectInstallation} style={{ width: 330 }}>
-            <option value={0}>Select installation</option>
-            {this.state.installations.map(value => {
-              const selected = query.installationId === value.id;
-              return (
-                <option value={value.id} selected={selected}>
-                  {value.name}
-                </option>
-              );
-            })}
-          </select>
+          <Select isLoading={this.state.loadingInstallations}
+                  width={65}
+                  getOptionLabel={this.getInstallationOptionLabel}
+                  options={this.state.installations.map(installation => {
+                    return {value: installation}
+                  })}
+                  onChange={this.onSelectInstallation}
+                  value={this.state.selectedInstallation} />
         </div>
+        <div className={'gf-form-inline'}>
         {query.meta.map((value, idx) => {
           return <FilterEntry idx={idx} data={value} onDelete={this.onMetaDelete} onUpdate={this.onMetaUpdate} />;
         })}
+        </div>
         <div className={'gf-form-inline'} style={{ paddingBottom: 10 }}>
           <Button onClick={this.addFilter}>Add filter</Button>
         </div>

@@ -42,6 +42,12 @@ export interface FunctionX {
   meta: Map<string, string>;
 }
 
+export interface Installation {
+  id: number;
+  client_id: number;
+  name: string;
+}
+
 /**
  * These are options configured for each DataSource instance
  */

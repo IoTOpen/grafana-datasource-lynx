@@ -1,4 +1,4 @@
-import { FunctionX, LogResult, MyDataSourceOptions, MyQuery } from './types';
+import {FunctionX, Installation, LogResult, MyDataSourceOptions, MyQuery} from './types';
 import {
   DataQueryRequest,
   DataQueryResponse,
@@ -28,7 +28,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     });
   }
 
-  fetchInstallations(): Promise<any> {
+  fetchInstallations(): Promise<Installation[]> {
     return fetch(this.settings.jsonData.url + '/api/v2/installationinfo', {
       headers: {
         Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
@@ -54,7 +54,13 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       headers: {
         Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
       },
-    }).then(result => result.json());
+    }).then(result => result.json()).then(res => {
+      if (res['message'] !== undefined) {
+        return [];
+      } else {
+        return res;
+      }
+    })
   }
 
   createLogTopicMappings(clientId: number, functions: FunctionX[]): Map<string, FunctionX[]> {
