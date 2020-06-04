@@ -29,9 +29,7 @@
   },
   "routes": [
     {
-      "path": "lynx",
       "url": "{{.JsonData.url}}",
-      "method": "GET",
       "headers": [{
         "name": "Authorization",
         "content": "{{.JsonData.auth}}"

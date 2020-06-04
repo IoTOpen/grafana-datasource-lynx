@@ -32,29 +32,18 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     return this.backendSrv
       .datasourceRequest({
         method: 'GET',
-        url: `${this.settings.url}/lynx/api/v2/installationinfo`,
+        url: `${this.settings.url}/api/v2/installationinfo`,
       })
       .then(result => result.data);
-    //    return fetch(this.settings.jsonData.url + '/api/v2/installationinfo', {
-    //      headers: {
-    //        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
-    //      },
-    //    }).then(result => result.json());
   }
 
   fetchFunctions(installationId: number): Promise<any> {
     return this.backendSrv
       .datasourceRequest({
         method: 'GET',
-        url: `${this.settings.url}/lynx/api/v2/functionx/${installationId}`,
+        url: `${this.settings.url}/api/v2/functionx/${installationId}`,
       })
       .then(result => result.data);
-
-    //    return fetch(this.settings.jsonData.url + '/api/v2/functionx/' + installationId, {
-    //      headers: {
-    //        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
-    //      },
-    //    }).then(result => result.json());
   }
 
   fetchFilteredFunctions(installationId: number, filter: any): Promise<FunctionX[]> {
@@ -66,22 +55,9 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     return this.backendSrv
       .datasourceRequest({
         method: 'GET',
-        url: `${this.settings.url}/lynx/api/v2/functionx/${installationId}?${queryParams}`,
+        url: `${this.settings.url}/api/v2/functionx/${installationId}?${queryParams}`,
       })
       .then(result => result.data);
-    //    return fetch(this.settings.jsonData.url + '/api/v2/functionx/' + installationId + '?' + queryParams, {
-    //      headers: {
-    //        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
-    //      },
-    //    })
-    //      .then(result => result.json())
-    //      .then(res => {
-    //        if (res['message'] !== undefined) {
-    //          return [];
-    //        } else {
-    //          return res;
-    //        }
-    //      });
   }
 
   createLogTopicMappings(clientId: number, functions: FunctionX[]): Map<string, FunctionX[]> {
@@ -101,8 +77,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   }
 
   fetchLog(installationId: number, from: number, to: number, offset: number, topics?: string[]): Promise<LogResult> {
-    //  const url = this.settings.jsonData.url + '/api/v3beta/log/' + String(installationId);
-    const url = `${this.settings.url}/lynx/api/v3beta/log/${installationId}`;
+    const url = `${this.settings.url}/api/v3beta/log/${installationId}`;
     const queryParams = {
       from: String(from),
       to: String(to),
@@ -121,20 +96,10 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         method: 'GET',
       })
       .then(result => result.data as LogResult);
-    //    return fetch(url + queryString, {
-    //      headers: {
-    //        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
-    //      },
-    //    })
-    //      .then(result => result.json())
-    //      .then(obj => {
-    //        return obj as LogResult;
-    //      });
   }
 
   fetchState(installationId: number, topics?: string[]): Promise<LogResult[]> {
-    //const url = `${this.settings.jsonData.url}/api/v2/status/${installationId}`;
-    const url = `${this.settings.url}/lynx/api/v2/status/${installationId}`;
+    const url = `${this.settings.url}/api/v2/status/${installationId}`;
     const queryParams = {};
     if (topics) {
       queryParams['topics'] = topics.join(',');
@@ -171,33 +136,6 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         }
         return [res];
       });
-    //    return fetch(url + queryString, {
-    //      headers: {
-    //        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
-    //      },
-    //    })
-    //      .then(result => result.json())
-    //      .then(obj => {
-    //        const res: LogResult = {
-    //          total: obj.length,
-    //          count: obj.length,
-    //          last: 0,
-    //          data: obj.map(ent => {
-    //            return {
-    //              timestamp: ent.timestamp,
-    //              client_id: ent.client_id,
-    //              installation_id: ent.installation_id,
-    //              topic: `${ent.client_id}/${ent.topic}`,
-    //              value: ent.value,
-    //              msg: ent.msg,
-    //            };
-    //          }),
-    //        };
-    //        if (obj.length > 0) {
-    //          res.last = obj[obj.length - 1].timestamp;
-    //        }
-    //        return [res];
-    //      });
   }
 
   async fetchLogFull(installationId: number, from: number, to: number, topics: string[]): Promise<LogResult[]> {
