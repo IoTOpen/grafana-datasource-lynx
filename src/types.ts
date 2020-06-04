@@ -54,4 +54,5 @@ export interface Installation {
 export interface MyDataSourceOptions extends DataSourceJsonData {
   url?: string;
   apiKey?: string;
+  auth?: string;
 }

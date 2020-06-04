@@ -16,6 +16,7 @@
     "@grafana/ui": "^7.0.1"
   },
   "dependencies": {
+    "@grafana/runtime": "^7.0.3",
     "lodash": "^4.17.15"
   }
 }

@@ -16,7 +16,9 @@ export class ConfigEditor extends PureComponent<MyProps, State> {
     const jsonData = {
       ...options.jsonData,
       apiKey: event.target.value,
+      auth: 'Basic ' + btoa(`apikey:${event.target.value}`),
     };
+    console.log(jsonData);
     onOptionsChange({ ...options, jsonData });
   };
 
