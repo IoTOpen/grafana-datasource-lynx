@@ -355,10 +355,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   testDatasource() {
     // Implement a health check for your data source.
     return new Promise((resolve, reject) => {
-      fetch(this.settings.jsonData.url + '/api/v2/installationinfo', {
-        headers: {
-          Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
-        },
+      fetch(this.settings.url + '/api/v2/installationinfo', {
       })
         .then(value => {
           if (!(value.status === 200)) {
