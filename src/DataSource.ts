@@ -1,4 +1,4 @@
-import {FunctionX, Installation, LogResult, MyDataSourceOptions, MyQuery} from './types';
+import { FunctionX, Installation, LogResult, MyDataSourceOptions, MyQuery } from './types';
 import {
   DataQueryRequest,
   DataQueryResponse,
@@ -54,13 +54,15 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       headers: {
         Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
       },
-    }).then(result => result.json()).then(res => {
-      if (res['message'] !== undefined) {
-        return [];
-      } else {
-        return res;
-      }
     })
+      .then(result => result.json())
+      .then(res => {
+        if (res['message'] !== undefined) {
+          return [];
+        } else {
+          return res;
+        }
+      });
   }
 
   createLogTopicMappings(clientId: number, functions: FunctionX[]): Map<string, FunctionX[]> {
