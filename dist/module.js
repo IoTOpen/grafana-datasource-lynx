@@ -897,6 +897,10 @@ function (_super) {
                   func = functions_1_1.value;
 
                   for (key in func.meta) {
+                    if (key === 'name') {
+                      continue;
+                    }
+
                     if (metaColumns.indexOf(key) === -1) {
                       metaColumns.push(key);
                       columns.push({
