@@ -1,14 +1,18 @@
 import { FunctionX, Installation, LogResult, MyDataSourceOptions, MyQuery } from './types';
 import {
+  ArrayVector,
+  DataFrame,
   DataQueryRequest,
   DataQueryResponse,
   DataSourceApi,
   DataSourceInstanceSettings,
   DefaultTimeRange,
+  FieldType,
   TableData,
   TimeSeries,
 } from '@grafana/data';
 import { BackendSrv } from '@grafana/runtime';
+
 export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   private settings: DataSourceInstanceSettings<MyDataSourceOptions>;
 
@@ -154,7 +158,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
   async fetchQueriedFunctions(target: MyQuery): Promise<FunctionX[]> {
     let functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
-    if (target.messageFrom !== '') {
+    if (target.messageFrom !== '' && target.messageFrom !== undefined) {
       const messageMeta = [{ key: 'type', value: target.messageFrom }];
       for (const originalFilter of target.meta) {
         if (originalFilter.key !== 'type') {
@@ -237,12 +241,27 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     const targetDatapoints = new Map<string, any[][]>();
     const targetDatapointsName = new Map<string, string>();
 
+    const columns = [{ text: 'Time' }, { text: 'name' }, { text: 'value' }, { text: 'msg' }];
+    const metaColumns: string[] = [];
+
     const functions = await this.fetchQueriedFunctions(target);
     const mappings = this.createLogTopicMappings(target.clientId, functions);
     const topics = Array.from(mappings.keys());
     if (topics.length === 0) {
       return null;
     }
+
+    if (target.metaAsFields) {
+      for (const func of functions) {
+        for (const key in func.meta) {
+          if (metaColumns.indexOf(key) === -1) {
+            metaColumns.push(key);
+            columns.push({ text: key });
+          }
+        }
+      }
+    }
+
     const results = target.stateOnly
       ? await this.fetchState(target.installationId, topics)
       : await this.fetchLogFull(target.installationId, from, to, topics);
@@ -300,7 +319,16 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           }
 
           const dat = new Date(logEntry.timestamp * 1000);
-          const row = [dat.toISOString(), matchingFunction.meta[target.nameBy], logEntry.value, msg];
+          const row = [dat, matchingFunction.meta[target.nameBy], logEntry.value, msg];
+          if (target.metaAsFields) {
+            for (const key of metaColumns) {
+              if (matchingFunction.meta[key]) {
+                row.push(matchingFunction.meta[key]);
+              } else {
+                row.push('');
+              }
+            }
+          }
           dps.push(row);
         }
       }
@@ -308,13 +336,99 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     targetDatapoints.forEach((value, key) => {
       const dp: TableData = {
         name: targetDatapointsName.get(key),
-        columns: [{ text: 'Time' }, { text: 'name' }, { text: 'value' }, { text: 'msg' }],
+        columns: columns,
         rows: value,
         refId: target.refId,
       };
       targetData.push(dp);
     });
     return targetData;
+  }
+
+  async queryDataFrames(target: MyQuery): Promise<DataFrame[]> {
+    const data = [Date.now() - 1000 * 60 * 5, Date.now() - 1000 * 60 * 2];
+    const result: DataFrame[] = [];
+    const df: DataFrame = {
+      name: 'MyFrame',
+      refId: target.refId,
+      length: 2,
+      fields: [
+        {
+          type: FieldType.time,
+          name: '_time_',
+          config: {},
+          labels: {
+            timelabel: 'time1',
+          },
+          values: new ArrayVector(data),
+        },
+        {
+          type: FieldType.number,
+          name: 'value',
+          config: {
+            displayName: 'value',
+          },
+          labels: {
+            valuelabels: 'lol',
+          },
+          values: new ArrayVector([1, 2]),
+        },
+        {
+          type: FieldType.string,
+          name: 'msg',
+          config: {
+            displayName: 'msg',
+          },
+          labels: {
+            valuelabels: 'lol',
+          },
+          values: new ArrayVector(['hello', 'world']),
+        },
+      ],
+    };
+
+    const df2: DataFrame = {
+      name: 'MyData2',
+      length: 2,
+      refId: target.refId,
+      fields: [
+        {
+          name: '_time_',
+          config: {},
+          type: FieldType.time,
+          labels: {
+            label2: 'helloworld',
+          },
+          values: new ArrayVector(data),
+        },
+        {
+          name: 'value',
+          config: {},
+          type: FieldType.number,
+          labels: {
+            level: '3',
+            geohash: 'u6sdjpqs0',
+          },
+          values: new ArrayVector([3, 1]),
+        },
+        {
+          type: FieldType.string,
+          name: 'msg',
+          config: {
+            displayName: 'msg',
+          },
+          labels: {
+            valuelabels: 'lol',
+          },
+          values: new ArrayVector(['hello', 'wow']),
+        },
+      ],
+    };
+
+    result.push(df);
+    result.push(df2);
+
+    return result;
   }
 
   async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
@@ -332,6 +446,9 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
     const jobs: Array<Promise<any[] | null>> = [];
     for (const target of targets) {
+      //    const job = this.queryDataFrames(target);
+      //    jobs.push(job);
+
       if (target.tabledata) {
         const job = this.queryTableData(target, from, to);
         jobs.push(job);
@@ -355,8 +472,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   testDatasource() {
     // Implement a health check for your data source.
     return new Promise((resolve, reject) => {
-      fetch(this.settings.url + '/api/v2/installationinfo', {
-      })
+      fetch(`${this.settings.url}/api/v2/installationinfo`)
         .then(value => {
           if (!(value.status === 200)) {
             throw new Error(value.statusText);
