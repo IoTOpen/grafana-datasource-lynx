@@ -368,9 +368,11 @@ function (_super) {
           options = _a.options;
 
       var jsonData = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, options.jsonData), {
-        apiKey: event.target.value
+        apiKey: event.target.value,
+        auth: 'Basic ' + btoa("apikey:" + event.target.value)
       });
 
+      console.log(jsonData);
       onOptionsChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, options), {
         jsonData: jsonData
       }));
@@ -449,9 +451,10 @@ var DataSource =
 function (_super) {
   Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__extends"])(DataSource, _super);
 
-  function DataSource(instanceSettings) {
+  function DataSource(instanceSettings, backendSrv) {
     var _this = _super.call(this, instanceSettings) || this;
 
+    _this.backendSrv = backendSrv;
     _this.settings = instanceSettings;
     return _this;
   }
@@ -469,22 +472,20 @@ function (_super) {
   };
 
   DataSource.prototype.fetchInstallations = function () {
-    return fetch(this.settings.jsonData.url + '/api/v2/installationinfo', {
-      headers: {
-        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey)
-      }
+    return this.backendSrv.datasourceRequest({
+      method: 'GET',
+      url: this.settings.url + "/api/v2/installationinfo"
     }).then(function (result) {
-      return result.json();
+      return result.data;
     });
   };
 
   DataSource.prototype.fetchFunctions = function (installationId) {
-    return fetch(this.settings.jsonData.url + '/api/v2/functionx/' + installationId, {
-      headers: {
-        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey)
-      }
+    return this.backendSrv.datasourceRequest({
+      method: 'GET',
+      url: this.settings.url + "/api/v2/functionx/" + installationId
     }).then(function (result) {
-      return result.json();
+      return result.data;
     });
   };
 
@@ -492,12 +493,11 @@ function (_super) {
     var queryParams = filter.map(function (entry) {
       return encodeURIComponent(entry.key) + '=' + encodeURIComponent(entry.value);
     }).join('&');
-    return fetch(this.settings.jsonData.url + '/api/v2/functionx/' + installationId + '?' + queryParams, {
-      headers: {
-        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey)
-      }
+    return this.backendSrv.datasourceRequest({
+      method: 'GET',
+      url: this.settings.url + "/api/v2/functionx/" + installationId + "?" + queryParams
     }).then(function (result) {
-      return result.json();
+      return result.data;
     });
   };
 
@@ -520,7 +520,7 @@ function (_super) {
   };
 
   DataSource.prototype.fetchLog = function (installationId, from, to, offset, topics) {
-    var url = this.settings.jsonData.url + '/api/v3beta/log/' + String(installationId);
+    var url = this.settings.url + "/api/v3beta/log/" + installationId;
     var queryParams = {
       from: String(from),
       to: String(to),
@@ -532,22 +532,19 @@ function (_super) {
       queryParams['topics'] = topics.join(',');
     }
 
-    var queryString = '?' + Object.keys(queryParams).map(function (key) {
+    var queryString = Object.keys(queryParams).map(function (key) {
       return encodeURIComponent(key) + '=' + encodeURIComponent(queryParams[key]);
     }).join('&');
-    return fetch(url + queryString, {
-      headers: {
-        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey)
-      }
+    return this.backendSrv.datasourceRequest({
+      url: url + "?" + queryString,
+      method: 'GET'
     }).then(function (result) {
-      return result.json();
-    }).then(function (obj) {
-      return obj;
+      return result.data;
     });
   };
 
   DataSource.prototype.fetchState = function (installationId, topics) {
-    var url = this.settings.jsonData.url + "/api/v2/status/" + installationId;
+    var url = this.settings.url + "/api/v2/status/" + installationId;
     var queryParams = {};
 
     if (topics) {
@@ -557,12 +554,11 @@ function (_super) {
     var queryString = '?' + Object.keys(queryParams).map(function (key) {
       return encodeURIComponent(key) + '=' + encodeURIComponent(queryParams[key]);
     }).join('&');
-    return fetch(url + queryString, {
-      headers: {
-        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey)
-      }
+    return this.backendSrv.datasourceRequest({
+      url: url + "?" + queryString,
+      method: 'GET'
     }).then(function (result) {
-      return result.json();
+      return result.data;
     }).then(function (obj) {
       var res = {
         total: obj.length,
@@ -643,7 +639,7 @@ function (_super) {
 
           case 1:
             functions = _e.sent();
-            if (!(target.messageFrom !== '')) return [3
+            if (!(target.messageFrom !== '' && target.messageFrom !== undefined)) return [3
             /*break*/
             , 3];
             messageMeta = [{
@@ -860,22 +856,32 @@ function (_super) {
 
   DataSource.prototype.queryTableData = function (target, from, to) {
     return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, Promise, function () {
-      var targetData, targetDatapoints, targetDatapointsName, functions, mappings, topics, results, _a, lastMsg, results_2, results_2_1, logResult, _b, _c, logEntry, matchingFunctions, matchingFunctions_2, matchingFunctions_2_1, matchingFunction, msg, link, tmpMsg, group, tmpGroup, dps, dat, row;
+      var targetData, targetDatapoints, targetDatapointsName, columns, metaColumns, functions, mappings, topics, functions_1, functions_1_1, func, key, results, _a, lastMsg, results_2, results_2_1, logResult, _b, _c, logEntry, matchingFunctions, matchingFunctions_2, matchingFunctions_2_1, matchingFunction, msg, link, tmpMsg, group, tmpGroup, dps, dat, row, metaColumns_1, metaColumns_1_1, key;
 
-      var e_6, _d, e_7, _e, e_8, _f;
+      var e_6, _d, e_7, _e, e_8, _f, e_9, _g, e_10, _h;
 
-      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_g) {
-        switch (_g.label) {
+      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_j) {
+        switch (_j.label) {
           case 0:
             targetData = [];
             targetDatapoints = new Map();
             targetDatapointsName = new Map();
+            columns = [{
+              text: 'Time'
+            }, {
+              text: 'name'
+            }, {
+              text: 'value'
+            }, {
+              text: 'msg'
+            }];
+            metaColumns = [];
             return [4
             /*yield*/
             , this.fetchQueriedFunctions(target)];
 
           case 1:
-            functions = _g.sent();
+            functions = _j.sent();
             mappings = this.createLogTopicMappings(target.clientId, functions);
             topics = Array.from(mappings.keys());
 
@@ -883,6 +889,33 @@ function (_super) {
               return [2
               /*return*/
               , null];
+            }
+
+            if (target.metaAsFields) {
+              try {
+                for (functions_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(functions), functions_1_1 = functions_1.next(); !functions_1_1.done; functions_1_1 = functions_1.next()) {
+                  func = functions_1_1.value;
+
+                  for (key in func.meta) {
+                    if (metaColumns.indexOf(key) === -1) {
+                      metaColumns.push(key);
+                      columns.push({
+                        text: key
+                      });
+                    }
+                  }
+                }
+              } catch (e_6_1) {
+                e_6 = {
+                  error: e_6_1
+                };
+              } finally {
+                try {
+                  if (functions_1_1 && !functions_1_1.done && (_d = functions_1["return"])) _d.call(functions_1);
+                } finally {
+                  if (e_6) throw e_6.error;
+                }
+              }
             }
 
             if (!target.stateOnly) return [3
@@ -893,7 +926,7 @@ function (_super) {
             , this.fetchState(target.installationId, topics)];
 
           case 2:
-            _a = _g.sent();
+            _a = _j.sent();
             return [3
             /*break*/
             , 5];
@@ -904,8 +937,8 @@ function (_super) {
             , this.fetchLogFull(target.installationId, from, to, topics)];
 
           case 4:
-            _a = _g.sent();
-            _g.label = 5;
+            _a = _j.sent();
+            _j.label = 5;
 
           case 5:
             results = _a;
@@ -916,7 +949,7 @@ function (_super) {
                 logResult = results_2_1.value;
 
                 try {
-                  for (_b = (e_7 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(logResult.data)), _c = _b.next(); !_c.done; _c = _b.next()) {
+                  for (_b = (e_8 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(logResult.data)), _c = _b.next(); !_c.done; _c = _b.next()) {
                     logEntry = _c.value;
                     matchingFunctions = mappings.get(logEntry.topic);
 
@@ -925,7 +958,7 @@ function (_super) {
                     }
 
                     try {
-                      for (matchingFunctions_2 = (e_8 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(matchingFunctions)), matchingFunctions_2_1 = matchingFunctions_2.next(); !matchingFunctions_2_1.done; matchingFunctions_2_1 = matchingFunctions_2.next()) {
+                      for (matchingFunctions_2 = (e_9 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(matchingFunctions)), matchingFunctions_2_1 = matchingFunctions_2.next(); !matchingFunctions_2_1.done; matchingFunctions_2_1 = matchingFunctions_2.next()) {
                         matchingFunction = matchingFunctions_2_1.value;
                         msg = logEntry.msg;
 
@@ -978,57 +1011,74 @@ function (_super) {
                         }
 
                         dat = new Date(logEntry.timestamp * 1000);
-                        row = [dat.toISOString(), matchingFunction.meta[target.nameBy], logEntry.value, msg];
+                        row = [dat, matchingFunction.meta[target.nameBy], logEntry.value, msg];
+
+                        if (target.metaAsFields) {
+                          try {
+                            for (metaColumns_1 = (e_10 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(metaColumns)), metaColumns_1_1 = metaColumns_1.next(); !metaColumns_1_1.done; metaColumns_1_1 = metaColumns_1.next()) {
+                              key = metaColumns_1_1.value;
+
+                              if (matchingFunction.meta[key]) {
+                                row.push(matchingFunction.meta[key]);
+                              } else {
+                                row.push('');
+                              }
+                            }
+                          } catch (e_10_1) {
+                            e_10 = {
+                              error: e_10_1
+                            };
+                          } finally {
+                            try {
+                              if (metaColumns_1_1 && !metaColumns_1_1.done && (_h = metaColumns_1["return"])) _h.call(metaColumns_1);
+                            } finally {
+                              if (e_10) throw e_10.error;
+                            }
+                          }
+                        }
+
                         dps.push(row);
                       }
-                    } catch (e_8_1) {
-                      e_8 = {
-                        error: e_8_1
+                    } catch (e_9_1) {
+                      e_9 = {
+                        error: e_9_1
                       };
                     } finally {
                       try {
-                        if (matchingFunctions_2_1 && !matchingFunctions_2_1.done && (_f = matchingFunctions_2["return"])) _f.call(matchingFunctions_2);
+                        if (matchingFunctions_2_1 && !matchingFunctions_2_1.done && (_g = matchingFunctions_2["return"])) _g.call(matchingFunctions_2);
                       } finally {
-                        if (e_8) throw e_8.error;
+                        if (e_9) throw e_9.error;
                       }
                     }
                   }
-                } catch (e_7_1) {
-                  e_7 = {
-                    error: e_7_1
+                } catch (e_8_1) {
+                  e_8 = {
+                    error: e_8_1
                   };
                 } finally {
                   try {
-                    if (_c && !_c.done && (_e = _b["return"])) _e.call(_b);
+                    if (_c && !_c.done && (_f = _b["return"])) _f.call(_b);
                   } finally {
-                    if (e_7) throw e_7.error;
+                    if (e_8) throw e_8.error;
                   }
                 }
               }
-            } catch (e_6_1) {
-              e_6 = {
-                error: e_6_1
+            } catch (e_7_1) {
+              e_7 = {
+                error: e_7_1
               };
             } finally {
               try {
-                if (results_2_1 && !results_2_1.done && (_d = results_2["return"])) _d.call(results_2);
+                if (results_2_1 && !results_2_1.done && (_e = results_2["return"])) _e.call(results_2);
               } finally {
-                if (e_6) throw e_6.error;
+                if (e_7) throw e_7.error;
               }
             }
 
             targetDatapoints.forEach(function (value, key) {
               var dp = {
                 name: targetDatapointsName.get(key),
-                columns: [{
-                  text: 'Time'
-                }, {
-                  text: 'name'
-                }, {
-                  text: 'value'
-                }, {
-                  text: 'msg'
-                }],
+                columns: columns,
                 rows: value,
                 refId: target.refId
               };
@@ -1042,11 +1092,93 @@ function (_super) {
     });
   };
 
+  DataSource.prototype.queryDataFrames = function (target) {
+    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, Promise, function () {
+      var data, result, df, df2;
+      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_a) {
+        data = [Date.now() - 1000 * 60 * 5, Date.now() - 1000 * 60 * 2];
+        result = [];
+        df = {
+          name: 'MyFrame',
+          refId: target.refId,
+          length: 2,
+          fields: [{
+            type: _grafana_data__WEBPACK_IMPORTED_MODULE_1__["FieldType"].time,
+            name: '_time_',
+            config: {},
+            labels: {
+              timelabel: 'time1'
+            },
+            values: new _grafana_data__WEBPACK_IMPORTED_MODULE_1__["ArrayVector"](data)
+          }, {
+            type: _grafana_data__WEBPACK_IMPORTED_MODULE_1__["FieldType"].number,
+            name: 'value',
+            config: {
+              displayName: 'value'
+            },
+            labels: {
+              valuelabels: 'lol'
+            },
+            values: new _grafana_data__WEBPACK_IMPORTED_MODULE_1__["ArrayVector"]([1, 2])
+          }, {
+            type: _grafana_data__WEBPACK_IMPORTED_MODULE_1__["FieldType"].string,
+            name: 'msg',
+            config: {
+              displayName: 'msg'
+            },
+            labels: {
+              valuelabels: 'lol'
+            },
+            values: new _grafana_data__WEBPACK_IMPORTED_MODULE_1__["ArrayVector"](['hello', 'world'])
+          }]
+        };
+        df2 = {
+          name: 'MyData2',
+          length: 2,
+          refId: target.refId,
+          fields: [{
+            name: '_time_',
+            config: {},
+            type: _grafana_data__WEBPACK_IMPORTED_MODULE_1__["FieldType"].time,
+            labels: {
+              label2: 'helloworld'
+            },
+            values: new _grafana_data__WEBPACK_IMPORTED_MODULE_1__["ArrayVector"](data)
+          }, {
+            name: 'value',
+            config: {},
+            type: _grafana_data__WEBPACK_IMPORTED_MODULE_1__["FieldType"].number,
+            labels: {
+              level: '3',
+              geohash: 'u6sdjpqs0'
+            },
+            values: new _grafana_data__WEBPACK_IMPORTED_MODULE_1__["ArrayVector"]([3, 1])
+          }, {
+            type: _grafana_data__WEBPACK_IMPORTED_MODULE_1__["FieldType"].string,
+            name: 'msg',
+            config: {
+              displayName: 'msg'
+            },
+            labels: {
+              valuelabels: 'lol'
+            },
+            values: new _grafana_data__WEBPACK_IMPORTED_MODULE_1__["ArrayVector"](['hello', 'wow'])
+          }]
+        };
+        result.push(df);
+        result.push(df2);
+        return [2
+        /*return*/
+        , result];
+      });
+    });
+  };
+
   DataSource.prototype.query = function (options) {
     return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, Promise, function () {
       var range, from, to, targets, response, jobs, targets_1, targets_1_1, target, job, job, data, data_1, data_1_1, series, series_1, series_1_1, serie;
 
-      var e_9, _a, e_10, _b, e_11, _c;
+      var e_11, _a, e_12, _b, e_13, _c;
 
       return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_d) {
         switch (_d.label) {
@@ -1069,7 +1201,8 @@ function (_super) {
 
             try {
               for (targets_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(targets), targets_1_1 = targets_1.next(); !targets_1_1.done; targets_1_1 = targets_1.next()) {
-                target = targets_1_1.value;
+                target = targets_1_1.value; //    const job = this.queryDataFrames(target);
+                //    jobs.push(job);
 
                 if (target.tabledata) {
                   job = this.queryTableData(target, from, to);
@@ -1079,15 +1212,15 @@ function (_super) {
                   jobs.push(job);
                 }
               }
-            } catch (e_9_1) {
-              e_9 = {
-                error: e_9_1
+            } catch (e_11_1) {
+              e_11 = {
+                error: e_11_1
               };
             } finally {
               try {
                 if (targets_1_1 && !targets_1_1.done && (_a = targets_1["return"])) _a.call(targets_1);
               } finally {
-                if (e_9) throw e_9.error;
+                if (e_11) throw e_11.error;
               }
             }
 
@@ -1107,31 +1240,31 @@ function (_super) {
                 }
 
                 try {
-                  for (series_1 = (e_11 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(series)), series_1_1 = series_1.next(); !series_1_1.done; series_1_1 = series_1.next()) {
+                  for (series_1 = (e_13 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(series)), series_1_1 = series_1.next(); !series_1_1.done; series_1_1 = series_1.next()) {
                     serie = series_1_1.value;
                     response.data.push(serie);
                   }
-                } catch (e_11_1) {
-                  e_11 = {
-                    error: e_11_1
+                } catch (e_13_1) {
+                  e_13 = {
+                    error: e_13_1
                   };
                 } finally {
                   try {
                     if (series_1_1 && !series_1_1.done && (_c = series_1["return"])) _c.call(series_1);
                   } finally {
-                    if (e_11) throw e_11.error;
+                    if (e_13) throw e_13.error;
                   }
                 }
               }
-            } catch (e_10_1) {
-              e_10 = {
-                error: e_10_1
+            } catch (e_12_1) {
+              e_12 = {
+                error: e_12_1
               };
             } finally {
               try {
                 if (data_1_1 && !data_1_1.done && (_b = data_1["return"])) _b.call(data_1);
               } finally {
-                if (e_10) throw e_10.error;
+                if (e_12) throw e_12.error;
               }
             }
 
@@ -1148,11 +1281,7 @@ function (_super) {
 
 
     return new Promise(function (resolve, reject) {
-      fetch(_this.settings.jsonData.url + '/api/v2/installationinfo', {
-        headers: {
-          Authorization: 'Basic ' + btoa('grafana:' + _this.settings.jsonData.apiKey)
-        }
-      }).then(function (value) {
+      fetch(_this.settings.url + "/api/v2/installationinfo").then(function (value) {
         if (!(value.status === 200)) {
           throw new Error(value.statusText);
         }
@@ -1210,23 +1339,31 @@ function (_super) {
   function QueryEditor(props) {
     var _this = _super.call(this, props) || this;
 
-    _this.onSelectInstallation = function (event) {
+    _this.onSelectInstallation = function (selected) {
       var _a = _this.props,
           onChange = _a.onChange,
           query = _a.query;
-      var target = Number(event.target.value);
+      console.log(selected);
+
+      if (selected.value == null) {
+        return;
+      }
+
       onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
-        installationId: target,
-        clientId: _this.getClientIdByInstallation(target)
+        installationId: selected.value.id,
+        clientId: selected.value.client_id
       }));
 
-      _this.props.datasource.fetchFunctions(Number(event.target.value)).then(function (functions) {
-        _this.setState({
-          functions: functions
-        });
-      });
+      _this.props.datasource.fetchFunctions(Number(selected.value.id)).then(function (functions) {
+        if (selected.value !== undefined) {
+          _this.setState({
+            functions: functions,
+            selectedInstallation: selected
+          });
 
-      _this.props.onRunQuery();
+          _this.props.onRunQuery();
+        }
+      });
     };
 
     _this.addFilter = function () {
@@ -1335,49 +1472,74 @@ function (_super) {
       _this.props.onRunQuery();
     };
 
+    _this.onMetaAsFields = function () {
+      var _a = _this.props,
+          onChange = _a.onChange,
+          query = _a.query;
+      onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
+        metaAsFields: !query.metaAsFields
+      }));
+
+      _this.props.onRunQuery();
+    };
+
     _this.tooltipGroupBy = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "Group series by some meta key or payload ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "msg"), " field. Defaults to Function ID.");
     _this.tooltipNameBy = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "This will name series based on some meta key.", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("br", null), "Defaults to ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "name"), ".");
     _this.tooltipMessageFrom = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "Using this field will join matching functions with the same filter, but the type changed to this field. The msg field will be overwritten by messages matching this type, linked through ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "device_id"), " meta key. Useful for eg. joining positional data. ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("br", null), "This field is only applied on table data.");
     _this.state = {
       installations: [],
       functions: [],
-      ticker: null
+      selectedInstallation: {
+        value: {
+          id: 0,
+          name: '',
+          client_id: 0
+        }
+      },
+      ticker: null,
+      loadingInstallations: true
     };
     return _this;
   }
-
-  QueryEditor.prototype.getClientIdByInstallation = function (installationId) {
-    var e_1, _a;
-
-    try {
-      for (var _b = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(this.state.installations), _c = _b.next(); !_c.done; _c = _b.next()) {
-        var installation = _c.value;
-
-        if (installation.id === installationId) {
-          return installation.client_id;
-        }
-      }
-    } catch (e_1_1) {
-      e_1 = {
-        error: e_1_1
-      };
-    } finally {
-      try {
-        if (_c && !_c.done && (_a = _b["return"])) _a.call(_b);
-      } finally {
-        if (e_1) throw e_1.error;
-      }
-    }
-
-    return 0;
-  };
 
   QueryEditor.prototype.componentDidMount = function () {
     var _this = this;
 
     this.props.datasource.fetchInstallations().then(function (installations) {
+      var selectedInstallation = {
+        id: 0,
+        client_id: 0,
+        name: ''
+      };
+
+      if (installations.length > 0) {
+        selectedInstallation = installations[0];
+      }
+
+      if (_this.props.query.installationId !== 0) {
+        var tmp = installations.find(function (x) {
+          return x.id === _this.props.query.installationId;
+        });
+
+        if (tmp !== undefined) {
+          selectedInstallation = tmp;
+        } else {
+          _this.onSelectInstallation({
+            value: selectedInstallation
+          });
+        }
+      } else {
+        _this.onSelectInstallation({
+          value: selectedInstallation
+        });
+      }
+
       _this.setState({
-        installations: installations
+        installations: installations,
+        loadingInstallations: false,
+        selectedInstallation: {
+          value: selectedInstallation
+        }
       });
     });
   };
@@ -1403,12 +1565,22 @@ function (_super) {
     }
   };
 
+  QueryEditor.prototype.getInstallationOptionLabel = function (input) {
+    if (input.value == null) {
+      return '';
+    }
+
+    return input.value.name;
+  };
+
   QueryEditor.prototype.render = function () {
     var _this = this;
 
     var query = this.props.query;
 
     if (query.meta == null) {
+      query.installationId = 0;
+      query.clientId = 0;
       query.meta = [{
         key: 'type',
         value: ''
@@ -1419,29 +1591,27 @@ function (_super) {
       className: 'section gf-form-group'
     }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: 'gf-form-inline'
-    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Label"], {
-      className: 'query-keyword'
-    }, "Installation"), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("select", {
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_3__["Select"], {
+      isLoading: this.state.loadingInstallations,
+      width: 65,
+      getOptionLabel: this.getInstallationOptionLabel,
+      options: this.state.installations.map(function (installation) {
+        return {
+          value: installation
+        };
+      }),
       onChange: this.onSelectInstallation,
-      style: {
-        width: 330
-      }
-    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("option", {
-      value: 0
-    }, "Select installation"), this.state.installations.map(function (value) {
-      var selected = query.installationId === value.id;
-      return react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("option", {
-        value: value.id,
-        selected: selected
-      }, value.name);
-    }))), query.meta.map(function (value, idx) {
+      value: this.state.selectedInstallation
+    })), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+      className: 'gf-form-inline'
+    }, query.meta.map(function (value, idx) {
       return react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_components_FilterEntry__WEBPACK_IMPORTED_MODULE_2__["FilterEntry"], {
         idx: idx,
         data: value,
         onDelete: _this.onMetaDelete,
         onUpdate: _this.onMetaUpdate
       });
-    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+    })), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: 'gf-form-inline',
       style: {
         paddingBottom: 10
@@ -1481,6 +1651,10 @@ function (_super) {
       label: 'Linked with',
       onChange: this.onLinkChange,
       value: query.linkKey
+    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(Switch, {
+      label: 'Meta to fields',
+      checked: query.metaAsFields,
+      onChange: this.onMetaAsFields
     }))), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(Switch, {
       label: 'Current state only',
       checked: query.stateOnly,
