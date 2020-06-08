@@ -254,6 +254,9 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     if (target.metaAsFields) {
       for (const func of functions) {
         for (const key in func.meta) {
+          if (key === 'name') {
+            continue;
+          }
           if (metaColumns.indexOf(key) === -1) {
             metaColumns.push(key);
             columns.push({ text: key });
