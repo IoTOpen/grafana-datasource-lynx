@@ -372,7 +372,6 @@ function (_super) {
         auth: 'Basic ' + btoa("apikey:" + event.target.value)
       });
 
-      console.log(jsonData);
       onOptionsChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, options), {
         jsonData: jsonData
       }));
@@ -1281,25 +1280,21 @@ function (_super) {
   };
 
   DataSource.prototype.testDatasource = function () {
-    var _this = this; // Implement a health check for your data source.
-
+    var _this = this;
 
     return new Promise(function (resolve, reject) {
-      fetch(_this.settings.url + "/api/v2/installationinfo").then(function (value) {
-        if (!(value.status === 200)) {
-          throw new Error(value.statusText);
-        }
-
-        return value.json();
-      }).then(function (value) {
+      _this.backendSrv.datasourceRequest({
+        method: 'GET',
+        url: _this.settings.url + "/api/v2/installationinfo"
+      }).then(function (result) {
         resolve({
           status: 'success',
           message: 'All good!'
         });
-      })["catch"](function (reason) {
+      })["catch"](function (err) {
         reject({
           status: 'error',
-          message: reason.message
+          message: err.statusText
         });
       });
     });
@@ -1347,7 +1342,6 @@ function (_super) {
       var _a = _this.props,
           onChange = _a.onChange,
           query = _a.query;
-      console.log(selected);
 
       if (selected.value == null) {
         return;
