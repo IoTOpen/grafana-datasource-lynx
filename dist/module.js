@@ -775,6 +775,10 @@ function (_super) {
                         if (target.groupBy !== undefined && target.groupBy !== '') {
                           tmpGroup = matchingFunction.meta[target.groupBy];
 
+                          if (target.groupBy === 'type') {
+                            tmpGroup = matchingFunction.type;
+                          }
+
                           if (tmpGroup !== undefined) {
                             group = tmpGroup;
                           }
@@ -992,6 +996,10 @@ function (_super) {
 
                         if (target.groupBy !== undefined && target.groupBy !== '') {
                           tmpGroup = matchingFunction.meta[target.groupBy];
+
+                          if (target.groupBy === 'type') {
+                            tmpGroup = matchingFunction.type;
+                          }
 
                           if (tmpGroup === undefined) {
                             tmpGroup = msg;
@@ -1354,6 +1362,8 @@ function (_super) {
 
       _this.props.datasource.fetchFunctions(Number(selected.value.id)).then(function (functions) {
         if (selected.value !== undefined) {
+          console.log(functions);
+
           _this.setState({
             functions: functions,
             selectedInstallation: selected
@@ -1521,16 +1531,14 @@ function (_super) {
 
         if (tmp !== undefined) {
           selectedInstallation = tmp;
-        } else {
-          _this.onSelectInstallation({
-            value: selectedInstallation
-          });
+        } else {//         this.onSelectInstallation({ value: selectedInstallation });
         }
-      } else {
-        _this.onSelectInstallation({
-          value: selectedInstallation
-        });
-      }
+      } else {//        this.onSelectInstallation({ value: selectedInstallation });
+        }
+
+      _this.onSelectInstallation({
+        value: selectedInstallation
+      });
 
       _this.setState({
         installations: installations,
@@ -1571,6 +1579,73 @@ function (_super) {
     return input.value.name;
   };
 
+  QueryEditor.prototype.getMetaKeys = function () {
+    var e_1, _a;
+
+    var res = ['id', 'type'];
+
+    try {
+      for (var _b = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(this.state.functions), _c = _b.next(); !_c.done; _c = _b.next()) {
+        var func = _c.value;
+
+        for (var metaKey in func.meta) {
+          if (res.indexOf(metaKey) === -1) {
+            res.push(metaKey);
+          }
+        }
+      }
+    } catch (e_1_1) {
+      e_1 = {
+        error: e_1_1
+      };
+    } finally {
+      try {
+        if (_c && !_c.done && (_a = _b["return"])) _a.call(_b);
+      } finally {
+        if (e_1) throw e_1.error;
+      }
+    }
+
+    return res;
+  };
+
+  QueryEditor.prototype.getMetaValues = function (key) {
+    var e_2, _a;
+
+    var res = [];
+
+    try {
+      for (var _b = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(this.state.functions), _c = _b.next(); !_c.done; _c = _b.next()) {
+        var func = _c.value;
+        var value = func.meta[key];
+
+        if (key === 'type') {
+          value = func.type;
+        }
+
+        if (key === 'id') {
+          value = func.id.toString();
+        }
+
+        if (value && res.indexOf(value) === -1) {
+          res.push(value);
+        }
+      }
+    } catch (e_2_1) {
+      e_2 = {
+        error: e_2_1
+      };
+    } finally {
+      try {
+        if (_c && !_c.done && (_a = _b["return"])) _a.call(_b);
+      } finally {
+        if (e_2) throw e_2.error;
+      }
+    }
+
+    return res;
+  };
+
   QueryEditor.prototype.render = function () {
     var _this = this;
 
@@ -1601,13 +1676,15 @@ function (_super) {
       onChange: this.onSelectInstallation,
       value: this.state.selectedInstallation
     })), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
-      className: 'gf-form-inline'
+      className: 'gf-form-inline,ui-list'
     }, query.meta.map(function (value, idx) {
       return react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_components_FilterEntry__WEBPACK_IMPORTED_MODULE_2__["FilterEntry"], {
         idx: idx,
         data: value,
         onDelete: _this.onMetaDelete,
-        onUpdate: _this.onMetaUpdate
+        onUpdate: _this.onMetaUpdate,
+        keys: _this.getMetaKeys(),
+        values: _this.getMetaValues(value.key)
       });
     })), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: 'gf-form-inline',
@@ -1682,6 +1759,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _grafana_ui__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @grafana/ui */ "@grafana/ui");
 /* harmony import */ var _grafana_ui__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_grafana_ui__WEBPACK_IMPORTED_MODULE_2__);
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
 
 
 
@@ -1695,11 +1774,21 @@ function (_super) {
     var _this = _super.call(this, props) || this;
 
     _this.onChangeKey = function (event) {
-      _this.props.onUpdate(_this.props.idx, event.currentTarget.value, _this.props.data.value);
+      if (_typeof(event) === _typeof('')) {
+        _this.props.onUpdate(_this.props.idx, event, _this.props.data.value);
+      } else {
+        _this.props.onUpdate(_this.props.idx, event.label, _this.props.data.value);
+      }
     };
 
     _this.onChangeValue = function (event) {
-      _this.props.onUpdate(_this.props.idx, _this.props.data.key, event.currentTarget.value);
+      console.log(event);
+
+      if (_typeof(event) === _typeof('')) {
+        _this.props.onUpdate(_this.props.idx, _this.props.data.key, event);
+      } else {
+        _this.props.onUpdate(_this.props.idx, _this.props.data.key, event.value);
+      }
     };
 
     _this.onDelete = function (event) {
@@ -1714,28 +1803,87 @@ function (_super) {
   };
 
   FilterEntry.prototype.render = function () {
+    var e_1, _a, e_2, _b;
+
+    var keys = [];
+    var values = [];
+
+    if (this.props.keys) {
+      try {
+        for (var _c = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(this.props.keys), _d = _c.next(); !_d.done; _d = _c.next()) {
+          var x = _d.value;
+          keys.push({
+            label: x,
+            value: x
+          });
+        }
+      } catch (e_1_1) {
+        e_1 = {
+          error: e_1_1
+        };
+      } finally {
+        try {
+          if (_d && !_d.done && (_a = _c["return"])) _a.call(_c);
+        } finally {
+          if (e_1) throw e_1.error;
+        }
+      }
+    }
+
+    if (this.props.values) {
+      try {
+        for (var _e = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(this.props.values), _f = _e.next(); !_f.done; _f = _e.next()) {
+          var x = _f.value;
+          values.push({
+            label: x,
+            value: x
+          });
+        }
+      } catch (e_2_1) {
+        e_2 = {
+          error: e_2_1
+        };
+      } finally {
+        try {
+          if (_f && !_f.done && (_b = _e["return"])) _b.call(_e);
+        } finally {
+          if (e_2) throw e_2.error;
+        }
+      }
+    }
+
     return react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: 'gf-form-inline'
     }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
       className: 'gf-form'
     }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("span", {
       className: 'gf-form-label query-keyword'
-    }, "key"), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_2__["Input"], {
-      type: 'text',
-      style: {
-        width: 150
+    }, "key"), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_2__["Select"], {
+      width: 30,
+      options: keys,
+      onChange: this.onChangeKey,
+      onCreateOption: this.onChangeKey,
+      value: {
+        label: this.props.data.key,
+        value: this.props.data.key
       },
-      value: this.props.data.key,
-      onChange: this.onChangeKey
+      isSearchable: true,
+      allowCustomValue: true,
+      placeholder: 'meta key'
     }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("span", {
       className: 'gf-form-label query-keyword'
-    }, "match"), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_2__["Input"], {
-      type: 'text',
-      style: {
-        width: 150
+    }, "match"), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_2__["Select"], {
+      width: 30,
+      options: values,
+      onChange: this.onChangeValue,
+      onCreateOption: this.onChangeValue,
+      value: {
+        label: this.props.data.value,
+        value: this.props.data.value
       },
-      value: this.props.data.value,
-      onChange: this.onChangeValue
+      isSearchable: true,
+      allowCustomValue: true,
+      placeholder: 'wildcard match'
     }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_2__["Button"], {
       variant: 'destructive',
       onClick: this.onDelete
@@ -1745,7 +1893,12 @@ function (_super) {
   return FilterEntry;
 }(react__WEBPACK_IMPORTED_MODULE_1__["PureComponent"]);
 
-
+ //<Select width={30} options={keys} onChange={this.onChangeKey}  value={{label: this.props.data.key}} onCreateOption={this.onChangeKey} isSearchable={true} allowCustomValue={true} />
+//<span className={'gf-form-label query-keyword'}>match</span>
+//<Select width={30} options={values} onChange={this.onChangeValue} value={{label: this.props.data.value}} onCreateOption={this.onChangeValue} isSearchable={true} allowCustomValue={true} />
+//<Input type={'text'} style={{ width: 150 }} value={this.props.data.key} onChange={this.onChangeKey} />
+//<span className={'gf-form-label query-keyword'}>match</span>
+//<Input type={'text'} style={{ width: 150 }} value={this.props.data.value} onChange={this.onChangeValue} />
 
 /***/ }),
 
