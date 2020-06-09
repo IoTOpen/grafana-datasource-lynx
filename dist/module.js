@@ -1362,8 +1362,6 @@ function (_super) {
 
       _this.props.datasource.fetchFunctions(Number(selected.value.id)).then(function (functions) {
         if (selected.value !== undefined) {
-          console.log(functions);
-
           _this.setState({
             functions: functions,
             selectedInstallation: selected
