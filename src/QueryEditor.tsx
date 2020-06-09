@@ -1,6 +1,6 @@
 import React, { PureComponent, ChangeEvent } from 'react';
 import { DataSource } from './DataSource';
-import { MyQuery, MyDataSourceOptions, Installation } from './types';
+import { MyQuery, MyDataSourceOptions, Installation, FunctionX } from './types';
 import { FilterEntry } from './components/FilterEntry';
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
 import { LegacyForms, Button, Select } from '@grafana/ui';
@@ -11,7 +11,7 @@ type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
 interface State {
   installations: Installation[];
-  functions: any[];
+  functions: FunctionX[];
   ticker: any;
   selectedInstallation: SelectableValue<Installation>;
   loadingInstallations: boolean;
@@ -40,11 +40,12 @@ export class QueryEditor extends PureComponent<Props, State> {
         if (tmp !== undefined) {
           selectedInstallation = tmp;
         } else {
-          this.onSelectInstallation({ value: selectedInstallation });
+          //         this.onSelectInstallation({ value: selectedInstallation });
         }
       } else {
-        this.onSelectInstallation({ value: selectedInstallation });
+        //        this.onSelectInstallation({ value: selectedInstallation });
       }
+      this.onSelectInstallation({ value: selectedInstallation });
       this.setState({
         installations: installations,
         loadingInstallations: false,
@@ -61,6 +62,7 @@ export class QueryEditor extends PureComponent<Props, State> {
     onChange({ ...query, installationId: selected.value.id, clientId: selected.value.client_id });
     this.props.datasource.fetchFunctions(Number(selected.value.id)).then(functions => {
       if (selected.value !== undefined) {
+        console.log(functions);
         this.setState({ functions: functions, selectedInstallation: selected });
         this.props.onRunQuery();
       }
@@ -175,6 +177,39 @@ export class QueryEditor extends PureComponent<Props, State> {
     return input.value.name;
   }
 
+  getMetaKeys(): string[] {
+    const res: string[] = ['id', 'type'];
+
+    for (const func of this.state.functions) {
+      for (const metaKey in func.meta) {
+        if (res.indexOf(metaKey) === -1) {
+          res.push(metaKey);
+        }
+      }
+    }
+
+    return res;
+  }
+
+  getMetaValues(key: string): string[] {
+    const res: string[] = [];
+
+    for (const func of this.state.functions) {
+      let value = func.meta[key];
+      if (key === 'type') {
+        value = func.type;
+      }
+      if (key === 'id') {
+        value = func.id.toString();
+      }
+      if (value && res.indexOf(value) === -1) {
+        res.push(value);
+      }
+    }
+
+    return res;
+  }
+
   render() {
     const query = this.props.query as MyQuery;
     if (query.meta == null) {
@@ -197,9 +232,18 @@ export class QueryEditor extends PureComponent<Props, State> {
             value={this.state.selectedInstallation}
           />
         </div>
-        <div className={'gf-form-inline'}>
+        <div className={'gf-form-inline,ui-list'}>
           {query.meta.map((value, idx) => {
-            return <FilterEntry idx={idx} data={value} onDelete={this.onMetaDelete} onUpdate={this.onMetaUpdate} />;
+            return (
+              <FilterEntry
+                idx={idx}
+                data={value}
+                onDelete={this.onMetaDelete}
+                onUpdate={this.onMetaUpdate}
+                keys={this.getMetaKeys()}
+                values={this.getMetaValues(value.key)}
+              />
+            );
           })}
         </div>
         <div className={'gf-form-inline'} style={{ paddingBottom: 10 }}>

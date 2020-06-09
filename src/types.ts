@@ -40,7 +40,7 @@ export interface LogResult {
 export interface FunctionX {
   id: number;
   type: string;
-  meta: Map<string, string>;
+  meta: object;
 }
 
 export interface Installation {

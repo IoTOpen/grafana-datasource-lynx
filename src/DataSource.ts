@@ -47,7 +47,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         method: 'GET',
         url: `${this.settings.url}/api/v2/functionx/${installationId}`,
       })
-      .then(result => result.data);
+      .then(result => result.data as FunctionX[]);
   }
 
   fetchFilteredFunctions(installationId: number, filter: any): Promise<FunctionX[]> {
@@ -61,7 +61,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         method: 'GET',
         url: `${this.settings.url}/api/v2/functionx/${installationId}?${queryParams}`,
       })
-      .then(result => result.data);
+      .then(result => result.data as FunctionX[]);
   }
 
   createLogTopicMappings(clientId: number, functions: FunctionX[]): Map<string, FunctionX[]> {
@@ -200,7 +200,10 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           // Grouping
           let group = String(matchingFunction.id);
           if (target.groupBy !== undefined && target.groupBy !== '') {
-            const tmpGroup = matchingFunction.meta[target.groupBy];
+            let tmpGroup = matchingFunction.meta[target.groupBy];
+            if (target.groupBy === 'type') {
+              tmpGroup = matchingFunction.type;
+            }
             if (tmpGroup !== undefined) {
               group = tmpGroup;
             }
@@ -303,6 +306,9 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           let group = String(matchingFunction.id);
           if (target.groupBy !== undefined && target.groupBy !== '') {
             let tmpGroup = matchingFunction.meta[target.groupBy];
+            if (target.groupBy === 'type') {
+              tmpGroup = matchingFunction.type;
+            }
             if (tmpGroup === undefined) {
               tmpGroup = msg;
             }
