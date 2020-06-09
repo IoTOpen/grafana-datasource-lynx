@@ -62,7 +62,6 @@ export class QueryEditor extends PureComponent<Props, State> {
     onChange({ ...query, installationId: selected.value.id, clientId: selected.value.client_id });
     this.props.datasource.fetchFunctions(Number(selected.value.id)).then(functions => {
       if (selected.value !== undefined) {
-        console.log(functions);
         this.setState({ functions: functions, selectedInstallation: selected });
         this.props.onRunQuery();
       }
