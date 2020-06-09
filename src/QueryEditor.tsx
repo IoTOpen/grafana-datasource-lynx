@@ -55,7 +55,6 @@ export class QueryEditor extends PureComponent<Props, State> {
 
   onSelectInstallation = (selected: SelectableValue<Installation>) => {
     const { onChange, query } = this.props;
-    console.log(selected);
     if (selected.value == null) {
       return;
     }

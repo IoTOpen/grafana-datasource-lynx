@@ -473,20 +473,17 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   }
 
   testDatasource() {
-    // Implement a health check for your data source.
     return new Promise((resolve, reject) => {
-      fetch(`${this.settings.url}/api/v2/installationinfo`)
-        .then(value => {
-          if (!(value.status === 200)) {
-            throw new Error(value.statusText);
-          }
-          return value.json();
+      this.backendSrv
+        .datasourceRequest({
+          method: 'GET',
+          url: `${this.settings.url}/api/v2/installationinfo`,
         })
-        .then(value => {
+        .then(result => {
           resolve({ status: 'success', message: 'All good!' });
         })
-        .catch(reason => {
-          reject({ status: 'error', message: reason.message });
+        .catch(err => {
+          reject({ status: 'error', message: err.statusText });
         });
     });
   }
