@@ -227,6 +227,7 @@ export class QueryEditor extends PureComponent<Props, State> {
             options={this.state.installations.map(installation => {
               return { value: installation };
             })}
+            menuPlacement={'bottom'}
             onChange={this.onSelectInstallation}
             value={this.state.selectedInstallation}
           />

@@ -71,6 +71,7 @@ export class FilterEntry extends PureComponent<FilterEntryProps> {
             value={{ label: this.props.data.key, value: this.props.data.key }}
             isSearchable={true}
             allowCustomValue={true}
+            menuPlacement={'bottom'}
             placeholder={'meta key'}
           />
           <span className={'gf-form-label query-keyword'}>match</span>
@@ -82,6 +83,7 @@ export class FilterEntry extends PureComponent<FilterEntryProps> {
             value={{ label: this.props.data.value, value: this.props.data.value }}
             isSearchable={true}
             allowCustomValue={true}
+            menuPlacement={'bottom'}
             placeholder={'wildcard match'}
           />
           <Button variant={'destructive'} onClick={this.onDelete}>
