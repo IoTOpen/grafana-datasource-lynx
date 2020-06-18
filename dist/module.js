@@ -1671,6 +1671,7 @@ function (_super) {
           value: installation
         };
       }),
+      menuPlacement: 'bottom',
       onChange: this.onSelectInstallation,
       value: this.state.selectedInstallation
     })), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
@@ -1867,6 +1868,7 @@ function (_super) {
       },
       isSearchable: true,
       allowCustomValue: true,
+      menuPlacement: 'bottom',
       placeholder: 'meta key'
     }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("span", {
       className: 'gf-form-label query-keyword'
@@ -1881,6 +1883,7 @@ function (_super) {
       },
       isSearchable: true,
       allowCustomValue: true,
+      menuPlacement: 'bottom',
       placeholder: 'wildcard match'
     }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(_grafana_ui__WEBPACK_IMPORTED_MODULE_2__["Button"], {
       variant: 'destructive',
