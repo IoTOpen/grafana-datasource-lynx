@@ -31,8 +31,8 @@
     {
       "url": "{{.JsonData.url}}",
       "headers": [{
-        "name": "Authorization",
-        "content": "{{.JsonData.auth}}"
+        "name": "X-API-Key",
+        "content": "{{.JsonData.apiKey}}"
       }]
     }
   ],
