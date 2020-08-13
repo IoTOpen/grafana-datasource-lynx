@@ -368,8 +368,7 @@ function (_super) {
           options = _a.options;
 
       var jsonData = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, options.jsonData), {
-        apiKey: event.target.value,
-        auth: 'Basic ' + btoa("apikey:" + event.target.value)
+        apiKey: event.target.value
       });
 
       onOptionsChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, options), {

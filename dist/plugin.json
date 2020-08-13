@@ -25,14 +25,14 @@
     ],
     "screenshots": [],
     "version": "1.0.2",
-    "updated": "2020-06-18"
+    "updated": "2020-08-13"
   },
   "routes": [
     {
       "url": "{{.JsonData.url}}",
       "headers": [{
-        "name": "Authorization",
-        "content": "{{.JsonData.auth}}"
+        "name": "X-API-Key",
+        "content": "{{.JsonData.apiKey}}"
       }]
     }
   ],
