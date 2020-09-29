@@ -1,16 +1,20 @@
 import React, { PureComponent, ChangeEvent } from 'react';
 import { DataSource } from './DataSource';
-import { MyQuery, MyDataSourceOptions } from './types';
+import { MyQuery, MyDataSourceOptions, Installation, FunctionX } from './types';
 import { FilterEntry } from './components/FilterEntry';
-import { QueryEditorProps } from '@grafana/data';
-import { Button, FormField, FormLabel, Switch } from '@grafana/ui';
+import { QueryEditorProps, SelectableValue } from '@grafana/data';
+import { LegacyForms, Button, Select } from '@grafana/ui';
+
+const { FormField, Switch } = LegacyForms;
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
 interface State {
-  installations: any[];
-  functions: any[];
+  installations: Installation[];
+  functions: FunctionX[];
   ticker: any;
+  selectedInstallation: SelectableValue<Installation>;
+  loadingInstallations: boolean;
 }
 
 export class QueryEditor extends PureComponent<Props, State> {
@@ -19,33 +23,49 @@ export class QueryEditor extends PureComponent<Props, State> {
     this.state = {
       installations: [],
       functions: [],
+      selectedInstallation: { value: { id: 0, name: '', client_id: 0 } },
       ticker: null,
+      loadingInstallations: true,
     };
-  }
-
-  getClientIdByInstallation(installationId: number): number {
-    for (const installation of this.state.installations) {
-      if (installation.id === installationId) {
-        return installation.client_id;
-      }
-    }
-    return 0;
   }
 
   componentDidMount(): void {
     this.props.datasource.fetchInstallations().then(installations => {
-      this.setState({ installations: installations });
+      let selectedInstallation = { id: 0, client_id: 0, name: '' };
+      if (installations.length > 0) {
+        selectedInstallation = installations[0];
+      }
+      if (this.props.query.installationId !== 0) {
+        const tmp = installations.find(x => x.id === this.props.query.installationId);
+        if (tmp !== undefined) {
+          selectedInstallation = tmp;
+        } else {
+          //         this.onSelectInstallation({ value: selectedInstallation });
+        }
+      } else {
+        //        this.onSelectInstallation({ value: selectedInstallation });
+      }
+      this.onSelectInstallation({ value: selectedInstallation });
+      this.setState({
+        installations: installations,
+        loadingInstallations: false,
+        selectedInstallation: { value: selectedInstallation },
+      });
     });
   }
 
-  onSelectInstallation = (event: ChangeEvent<HTMLSelectElement>) => {
+  onSelectInstallation = (selected: SelectableValue<Installation>) => {
     const { onChange, query } = this.props;
-    const target = Number(event.target.value);
-    onChange({ ...query, installationId: target, clientId: this.getClientIdByInstallation(target) });
-    this.props.datasource.fetchFunctions(Number(event.target.value)).then(functions => {
-      this.setState({ functions: functions });
+    if (selected.value == null) {
+      return;
+    }
+    onChange({ ...query, installationId: selected.value.id, clientId: selected.value.client_id });
+    this.props.datasource.fetchFunctions(Number(selected.value.id)).then(functions => {
+      if (selected.value !== undefined) {
+        this.setState({ functions: functions, selectedInstallation: selected });
+        this.props.onRunQuery();
+      }
     });
-    this.props.onRunQuery();
   };
 
   addFilter = () => {
@@ -122,6 +142,12 @@ export class QueryEditor extends PureComponent<Props, State> {
     this.props.onRunQuery();
   };
 
+  onMetaAsFields = (): void => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, metaAsFields: !query.metaAsFields });
+    this.props.onRunQuery();
+  };
+
   tooltipGroupBy = (
     <>
       Group series by some meta key or payload <code>msg</code> field. Defaults to Function ID.
@@ -136,43 +162,108 @@ export class QueryEditor extends PureComponent<Props, State> {
   );
   tooltipMessageFrom = (
     <>
-      Using this field will join matching functions with the same filter, but the type changed to this field. The msg field will be overwritten by
-      messages matching this type, linked through <code>device_id</code> meta key. Useful for eg. joining positional data. <br />
+      Using this field will join matching functions with the same filter, but the type changed to this field. The msg
+      field will be overwritten by messages matching this type, linked through <code>device_id</code> meta key. Useful
+      for eg. joining positional data. <br />
       This field is only applied on table data.
     </>
   );
 
+  getInstallationOptionLabel(input: SelectableValue<Installation>): string {
+    if (input.value == null) {
+      return '';
+    }
+    return input.value.name;
+  }
+
+  getMetaKeys(): string[] {
+    const res: string[] = ['id', 'type'];
+
+    for (const func of this.state.functions) {
+      for (const metaKey in func.meta) {
+        if (res.indexOf(metaKey) === -1) {
+          res.push(metaKey);
+        }
+      }
+    }
+
+    return res;
+  }
+
+  getMetaValues(key: string): string[] {
+    const res: string[] = [];
+
+    for (const func of this.state.functions) {
+      let value = func.meta[key];
+      if (key === 'type') {
+        value = func.type;
+      }
+      if (key === 'id') {
+        value = func.id.toString();
+      }
+      if (value && res.indexOf(value) === -1) {
+        res.push(value);
+      }
+    }
+
+    return res;
+  }
+
   render() {
     const query = this.props.query as MyQuery;
     if (query.meta == null) {
+      query.installationId = 0;
+      query.clientId = 0;
       query.meta = [{ key: 'type', value: '' }];
     }
 
     return (
       <div className={'section gf-form-group'}>
         <div className={'gf-form-inline'}>
-          <FormLabel className={'query-keyword'}>Installation</FormLabel>
-          <select onChange={this.onSelectInstallation} style={{ width: 330 }}>
-            <option value={0}>Select installation</option>
-            {this.state.installations.map(value => {
-              const selected = query.installationId === value.id;
-              return (
-                <option value={value.id} selected={selected}>
-                  {value.name}
-                </option>
-              );
+          <Select
+            isLoading={this.state.loadingInstallations}
+            width={65}
+            getOptionLabel={this.getInstallationOptionLabel}
+            options={this.state.installations.map(installation => {
+              return { value: installation };
             })}
-          </select>
+            menuPlacement={'bottom'}
+            onChange={this.onSelectInstallation}
+            value={this.state.selectedInstallation}
+          />
         </div>
-        {query.meta.map((value, idx) => {
-          return <FilterEntry idx={idx} data={value} onDelete={this.onMetaDelete} onUpdate={this.onMetaUpdate} />;
-        })}
+        <div className={'gf-form-inline,ui-list'}>
+          {query.meta.map((value, idx) => {
+            return (
+              <FilterEntry
+                idx={idx}
+                data={value}
+                onDelete={this.onMetaDelete}
+                onUpdate={this.onMetaUpdate}
+                keys={this.getMetaKeys()}
+                values={this.getMetaValues(value.key)}
+              />
+            );
+          })}
+        </div>
         <div className={'gf-form-inline'} style={{ paddingBottom: 10 }}>
           <Button onClick={this.addFilter}>Add filter</Button>
         </div>
         <div className={'gf-form-inline'}>
-          <FormField labelWidth={40} label={'Group by'} onChange={this.onGroupByChange} value={query.groupBy} tooltip={this.tooltipGroupBy} />
-          <FormField labelWidth={40} label={'Name by'} onChange={this.onNameByChange} value={query.nameBy} tooltip={this.tooltipNameBy} />
+          <FormField
+            labelWidth={40}
+            label={'Group by'}
+            onChange={this.onGroupByChange}
+            value={query.groupBy}
+            tooltip={this.tooltipGroupBy}
+          />
+          <FormField
+            labelWidth={40}
+            label={'Name by'}
+            onChange={this.onNameByChange}
+            value={query.nameBy}
+            tooltip={this.tooltipNameBy}
+          />
         </div>
         <div className={'gf-form-inline'}>
           <Switch label={'As table data'} checked={query.tabledata} onChange={this.onDatatable} />
@@ -185,6 +276,7 @@ export class QueryEditor extends PureComponent<Props, State> {
               tooltip={this.tooltipMessageFrom}
             />
             <FormField labelWidth={40} label={'Linked with'} onChange={this.onLinkChange} value={query.linkKey} />
+            <Switch label={'Meta to fields'} checked={query.metaAsFields} onChange={this.onMetaAsFields} />
           </div>
         </div>
         <Switch label={'Current state only'} checked={query.stateOnly} onChange={this.onStateOnlyChange} />

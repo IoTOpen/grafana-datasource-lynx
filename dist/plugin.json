@@ -24,11 +24,20 @@
       }
     ],
     "screenshots": [],
-    "version": "1.0.1",
-    "updated": "2020-03-11"
+    "version": "1.0.2",
+    "updated": "2020-08-13"
   },
+  "routes": [
+    {
+      "url": "{{.JsonData.url}}",
+      "headers": [{
+        "name": "X-API-Key",
+        "content": "{{.JsonData.apiKey}}"
+      }]
+    }
+  ],
   "dependencies": {
-    "grafanaVersion": "6.6.x",
+    "grafanaVersion": "7.x.x",
     "plugins": []
   }
 }

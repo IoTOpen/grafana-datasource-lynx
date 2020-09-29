@@ -1,6 +1,6 @@
 {
   "name": "iotopen-iotopen-datasource",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Fetch data from IoT Open",
   "scripts": {
     "build": "grafana-toolkit plugin:build",
@@ -11,11 +11,12 @@
   "author": "IoTOpen",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@grafana/data": "^6.4.4",
-    "@grafana/toolkit": "^6.4.4",
-    "@grafana/ui": "^6.4.4"
+    "@grafana/data": "^7.0.1",
+    "@grafana/toolkit": "^7.0.1",
+    "@grafana/ui": "^7.0.1"
   },
   "dependencies": {
+    "@grafana/runtime": "^7.0.3",
     "lodash": "^4.17.15"
   }
 }

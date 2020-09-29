@@ -7,6 +7,7 @@ export interface MyQuery extends DataQuery {
   meta: any[];
   tabledata: boolean;
   stateOnly: boolean;
+  metaAsFields: boolean;
   linkKey: string;
   messageFrom: string;
   groupBy: string;
@@ -39,7 +40,13 @@ export interface LogResult {
 export interface FunctionX {
   id: number;
   type: string;
-  meta: Map<string, string>;
+  meta: object;
+}
+
+export interface Installation {
+  id: number;
+  client_id: number;
+  name: string;
 }
 
 /**
@@ -48,4 +55,5 @@ export interface FunctionX {
 export interface MyDataSourceOptions extends DataSourceJsonData {
   url?: string;
   apiKey?: string;
+  auth?: string;
 }

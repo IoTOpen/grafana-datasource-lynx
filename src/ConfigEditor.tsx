@@ -1,7 +1,8 @@
 import React, { PureComponent, ChangeEvent } from 'react';
 import { MyDataSourceOptions } from './types';
-import { FormField } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
+import { LegacyForms } from '@grafana/ui';
+const { FormField } = LegacyForms;
 
 interface MyProps extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> {}
 

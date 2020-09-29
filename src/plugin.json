@@ -27,8 +27,17 @@
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },
+  "routes": [
+    {
+      "url": "{{.JsonData.url}}",
+      "headers": [{
+        "name": "X-API-Key",
+        "content": "{{.JsonData.apiKey}}"
+      }]
+    }
+  ],
   "dependencies": {
-    "grafanaVersion": "6.6.x",
+    "grafanaVersion": "7.x.x",
     "plugins": []
   }
 }

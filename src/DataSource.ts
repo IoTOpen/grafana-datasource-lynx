@@ -1,18 +1,22 @@
-import { FunctionX, LogResult, MyDataSourceOptions, MyQuery } from './types';
+import { FunctionX, Installation, LogResult, MyDataSourceOptions, MyQuery } from './types';
 import {
+  ArrayVector,
+  DataFrame,
   DataQueryRequest,
   DataQueryResponse,
   DataSourceApi,
   DataSourceInstanceSettings,
   DefaultTimeRange,
+  FieldType,
   TableData,
   TimeSeries,
 } from '@grafana/data';
+import { BackendSrv } from '@grafana/runtime';
 
 export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   private settings: DataSourceInstanceSettings<MyDataSourceOptions>;
 
-  constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
+  constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>, private backendSrv: BackendSrv) {
     super(instanceSettings);
     this.settings = instanceSettings;
   }
@@ -28,20 +32,22 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     });
   }
 
-  fetchInstallations(): Promise<any> {
-    return fetch(this.settings.jsonData.url + '/api/v2/installationinfo/grafana/ds', {
-      headers: {
-        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
-      },
-    }).then(result => result.json());
+  fetchInstallations(): Promise<Installation[]> {
+    return this.backendSrv
+      .datasourceRequest({
+        method: 'GET',
+        url: `${this.settings.url}/api/v2/installationinfo`,
+      })
+      .then(result => result.data);
   }
 
   fetchFunctions(installationId: number): Promise<any> {
-    return fetch(this.settings.jsonData.url + '/api/v2/functionx/' + installationId, {
-      headers: {
-        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
-      },
-    }).then(result => result.json());
+    return this.backendSrv
+      .datasourceRequest({
+        method: 'GET',
+        url: `${this.settings.url}/api/v2/functionx/${installationId}`,
+      })
+      .then(result => result.data as FunctionX[]);
   }
 
   fetchFilteredFunctions(installationId: number, filter: any): Promise<FunctionX[]> {
@@ -50,11 +56,12 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         return encodeURIComponent(entry.key) + '=' + encodeURIComponent(entry.value);
       })
       .join('&');
-    return fetch(this.settings.jsonData.url + '/api/v2/functionx/' + installationId + '?' + queryParams, {
-      headers: {
-        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
-      },
-    }).then(result => result.json());
+    return this.backendSrv
+      .datasourceRequest({
+        method: 'GET',
+        url: `${this.settings.url}/api/v2/functionx/${installationId}?${queryParams}`,
+      })
+      .then(result => result.data as FunctionX[]);
   }
 
   createLogTopicMappings(clientId: number, functions: FunctionX[]): Map<string, FunctionX[]> {
@@ -74,7 +81,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   }
 
   fetchLog(installationId: number, from: number, to: number, offset: number, topics?: string[]): Promise<LogResult> {
-    const url = this.settings.jsonData.url + '/api/v3beta/log/' + String(installationId);
+    const url = `${this.settings.url}/api/v3beta/log/${installationId}`;
     const queryParams = {
       from: String(from),
       to: String(to),
@@ -84,24 +91,19 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     if (topics) {
       queryParams['topics'] = topics.join(',');
     }
-    const queryString =
-      '?' +
-      Object.keys(queryParams)
-        .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(queryParams[key]))
-        .join('&');
-    return fetch(url + queryString, {
-      headers: {
-        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
-      },
-    })
-      .then(result => result.json())
-      .then(obj => {
-        return obj as LogResult;
-      });
+    const queryString = Object.keys(queryParams)
+      .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(queryParams[key]))
+      .join('&');
+    return this.backendSrv
+      .datasourceRequest({
+        url: `${url}?${queryString}`,
+        method: 'GET',
+      })
+      .then(result => result.data as LogResult);
   }
 
   fetchState(installationId: number, topics?: string[]): Promise<LogResult[]> {
-    const url = `${this.settings.jsonData.url}/api/v2/status/${installationId}`;
+    const url = `${this.settings.url}/api/v2/status/${installationId}`;
     const queryParams = {};
     if (topics) {
       queryParams['topics'] = topics.join(',');
@@ -111,12 +113,12 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       Object.keys(queryParams)
         .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(queryParams[key]))
         .join('&');
-    return fetch(url + queryString, {
-      headers: {
-        Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
-      },
-    })
-      .then(result => result.json())
+    return this.backendSrv
+      .datasourceRequest({
+        url: `${url}?${queryString}`,
+        method: 'GET',
+      })
+      .then(result => result.data)
       .then(obj => {
         const res: LogResult = {
           total: obj.length,
@@ -141,7 +143,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   }
 
   async fetchLogFull(installationId: number, from: number, to: number, topics: string[]): Promise<LogResult[]> {
-    const results = new Array<LogResult>();
+    const results: LogResult[] = [];
     let offset = 0;
     while (true) {
       const logResult = await this.fetchLog(installationId, from / 1000, to / 1000, offset, topics);
@@ -156,7 +158,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
   async fetchQueriedFunctions(target: MyQuery): Promise<FunctionX[]> {
     let functions = await this.fetchFilteredFunctions(target.installationId, target.meta);
-    if (target.messageFrom !== '') {
+    if (target.messageFrom !== '' && target.messageFrom !== undefined) {
       const messageMeta = [{ key: 'type', value: target.messageFrom }];
       for (const originalFilter of target.meta) {
         if (originalFilter.key !== 'type') {
@@ -198,7 +200,10 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           // Grouping
           let group = String(matchingFunction.id);
           if (target.groupBy !== undefined && target.groupBy !== '') {
-            const tmpGroup = matchingFunction.meta[target.groupBy];
+            let tmpGroup = matchingFunction.meta[target.groupBy];
+            if (target.groupBy === 'type') {
+              tmpGroup = matchingFunction.type;
+            }
             if (tmpGroup !== undefined) {
               group = tmpGroup;
             }
@@ -239,12 +244,30 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     const targetDatapoints = new Map<string, any[][]>();
     const targetDatapointsName = new Map<string, string>();
 
+    const columns = [{ text: 'Time' }, { text: 'name' }, { text: 'value' }, { text: 'msg' }];
+    const metaColumns: string[] = [];
+
     const functions = await this.fetchQueriedFunctions(target);
     const mappings = this.createLogTopicMappings(target.clientId, functions);
     const topics = Array.from(mappings.keys());
     if (topics.length === 0) {
       return null;
     }
+
+    if (target.metaAsFields) {
+      for (const func of functions) {
+        for (const key in func.meta) {
+          if (key === 'name') {
+            continue;
+          }
+          if (metaColumns.indexOf(key) === -1) {
+            metaColumns.push(key);
+            columns.push({ text: key });
+          }
+        }
+      }
+    }
+
     const results = target.stateOnly
       ? await this.fetchState(target.installationId, topics)
       : await this.fetchLogFull(target.installationId, from, to, topics);
@@ -264,7 +287,11 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           if (link === undefined || link === '') {
             link = 'device_id';
           }
-          if (target.messageFrom !== undefined && target.messageFrom !== '' && matchingFunction.type === target.messageFrom) {
+          if (
+            target.messageFrom !== undefined &&
+            target.messageFrom !== '' &&
+            matchingFunction.type === target.messageFrom
+          ) {
             lastMsg.set(matchingFunction.meta[link], logEntry.msg);
             continue;
           } else if (target.messageFrom !== undefined && target.messageFrom !== '') {
@@ -279,6 +306,9 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           let group = String(matchingFunction.id);
           if (target.groupBy !== undefined && target.groupBy !== '') {
             let tmpGroup = matchingFunction.meta[target.groupBy];
+            if (target.groupBy === 'type') {
+              tmpGroup = matchingFunction.type;
+            }
             if (tmpGroup === undefined) {
               tmpGroup = msg;
             }
@@ -298,7 +328,16 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           }
 
           const dat = new Date(logEntry.timestamp * 1000);
-          const row = [dat.toISOString(), matchingFunction.meta[target.nameBy], logEntry.value, msg];
+          const row = [dat, matchingFunction.meta[target.nameBy], logEntry.value, msg];
+          if (target.metaAsFields) {
+            for (const key of metaColumns) {
+              if (matchingFunction.meta[key]) {
+                row.push(matchingFunction.meta[key]);
+              } else {
+                row.push('');
+              }
+            }
+          }
           dps.push(row);
         }
       }
@@ -306,13 +345,99 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     targetDatapoints.forEach((value, key) => {
       const dp: TableData = {
         name: targetDatapointsName.get(key),
-        columns: [{ text: 'Time' }, { text: 'name' }, { text: 'value' }, { text: 'msg' }],
+        columns: columns,
         rows: value,
         refId: target.refId,
       };
       targetData.push(dp);
     });
     return targetData;
+  }
+
+  async queryDataFrames(target: MyQuery): Promise<DataFrame[]> {
+    const data = [Date.now() - 1000 * 60 * 5, Date.now() - 1000 * 60 * 2];
+    const result: DataFrame[] = [];
+    const df: DataFrame = {
+      name: 'MyFrame',
+      refId: target.refId,
+      length: 2,
+      fields: [
+        {
+          type: FieldType.time,
+          name: '_time_',
+          config: {},
+          labels: {
+            timelabel: 'time1',
+          },
+          values: new ArrayVector(data),
+        },
+        {
+          type: FieldType.number,
+          name: 'value',
+          config: {
+            displayName: 'value',
+          },
+          labels: {
+            valuelabels: 'lol',
+          },
+          values: new ArrayVector([1, 2]),
+        },
+        {
+          type: FieldType.string,
+          name: 'msg',
+          config: {
+            displayName: 'msg',
+          },
+          labels: {
+            valuelabels: 'lol',
+          },
+          values: new ArrayVector(['hello', 'world']),
+        },
+      ],
+    };
+
+    const df2: DataFrame = {
+      name: 'MyData2',
+      length: 2,
+      refId: target.refId,
+      fields: [
+        {
+          name: '_time_',
+          config: {},
+          type: FieldType.time,
+          labels: {
+            label2: 'helloworld',
+          },
+          values: new ArrayVector(data),
+        },
+        {
+          name: 'value',
+          config: {},
+          type: FieldType.number,
+          labels: {
+            level: '3',
+            geohash: 'u6sdjpqs0',
+          },
+          values: new ArrayVector([3, 1]),
+        },
+        {
+          type: FieldType.string,
+          name: 'msg',
+          config: {
+            displayName: 'msg',
+          },
+          labels: {
+            valuelabels: 'lol',
+          },
+          values: new ArrayVector(['hello', 'wow']),
+        },
+      ],
+    };
+
+    result.push(df);
+    result.push(df2);
+
+    return result;
   }
 
   async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
@@ -330,6 +455,9 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
     const jobs: Array<Promise<any[] | null>> = [];
     for (const target of targets) {
+      //    const job = this.queryDataFrames(target);
+      //    jobs.push(job);
+
       if (target.tabledata) {
         const job = this.queryTableData(target, from, to);
         jobs.push(job);
@@ -351,24 +479,17 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
   }
 
   testDatasource() {
-    // Implement a health check for your data source.
     return new Promise((resolve, reject) => {
-      fetch(this.settings.jsonData.url + '/api/v2/installationinfo/grafana/ds', {
-        headers: {
-          Authorization: 'Basic ' + btoa('grafana:' + this.settings.jsonData.apiKey),
-        },
-      })
-        .then(value => {
-          if (!(value.status === 200)) {
-            throw new Error(value.statusText);
-          }
-          return value.json();
+      this.backendSrv
+        .datasourceRequest({
+          method: 'GET',
+          url: `${this.settings.url}/api/v2/installationinfo`,
         })
-        .then(value => {
+        .then(result => {
           resolve({ status: 'success', message: 'All good!' });
         })
-        .catch(reason => {
-          reject({ status: 'error', message: reason.message });
+        .catch(err => {
+          reject({ status: 'error', message: err.statusText });
         });
     });
   }
