@@ -1,4 +1,4 @@
-import { FunctionX, Installation, LogResult, MyDataSourceOptions, MyQuery } from './types';
+import { DeviceX, FunctionX, Installation, LogResult, MyDataSourceOptions, MyQuery } from './types';
 import {
   ArrayVector,
   DataFrame,
@@ -41,13 +41,22 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       .then(result => result.data);
   }
 
-  fetchFunctions(installationId: number): Promise<any> {
+  fetchFunctions(installationId: number): Promise<FunctionX[]> {
     return this.backendSrv
       .datasourceRequest({
         method: 'GET',
         url: `${this.settings.url}/api/v2/functionx/${installationId}`,
       })
       .then(result => result.data as FunctionX[]);
+  }
+
+  fetchDevices(installationId: number): Promise<DeviceX[]> {
+    return this.backendSrv
+      .datasourceRequest({
+        method: 'GET',
+        url: `${this.settings.url}/api/v2/devicex/${installationId}`,
+      })
+      .then(result => result.data as DeviceX[]);
   }
 
   fetchFilteredFunctions(installationId: number, filter: any): Promise<FunctionX[]> {
@@ -254,6 +263,14 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       return null;
     }
 
+    let devices = new Map<string, DeviceX>();
+    if (target.joinDeviceMeta) {
+      await this.fetchDevices(target.installationId).then(devs => {
+        devs.forEach(dev => {
+          devices.set(dev.id.toString(), dev);
+        });
+      });
+    }
     if (target.metaAsFields) {
       for (const func of functions) {
         for (const key in func.meta) {
@@ -263,6 +280,25 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           if (metaColumns.indexOf(key) === -1) {
             metaColumns.push(key);
             columns.push({ text: key });
+          }
+        }
+        if (target.joinDeviceMeta) {
+          const deviceId = func.meta['device_id'];
+          if (deviceId !== '') {
+            const targetDevice = devices.get(deviceId);
+            if (!targetDevice) {
+              continue;
+            }
+            for (const key in targetDevice.meta) {
+              if (key === 'name') {
+                continue;
+              }
+              const virtualKey = `@device.${key}`;
+              if (metaColumns.indexOf(virtualKey) === -1) {
+                metaColumns.push(virtualKey);
+                columns.push({ text: virtualKey });
+              }
+            }
           }
         }
       }
@@ -331,10 +367,24 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           const row = [dat, matchingFunction.meta[target.nameBy], logEntry.value, msg];
           if (target.metaAsFields) {
             for (const key of metaColumns) {
-              if (matchingFunction.meta[key]) {
-                row.push(matchingFunction.meta[key]);
+              if (key.startsWith('@device.')) {
+                if (matchingFunction.meta['device_id']) {
+                  const dev = devices.get(matchingFunction.meta['device_id']);
+                  const metaKey = key.substring(8);
+                  if (dev && dev.meta[metaKey]) {
+                    row.push(dev.meta[metaKey]);
+                  } else {
+                    row.push('');
+                  }
+                } else {
+                  row.push('');
+                }
               } else {
-                row.push('');
+                if (matchingFunction.meta[key]) {
+                  row.push(matchingFunction.meta[key]);
+                } else {
+                  row.push('');
+                }
               }
             }
           }

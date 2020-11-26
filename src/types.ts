@@ -8,6 +8,7 @@ export interface MyQuery extends DataQuery {
   tabledata: boolean;
   stateOnly: boolean;
   metaAsFields: boolean;
+  joinDeviceMeta: boolean;
   linkKey: string;
   messageFrom: string;
   groupBy: string;
@@ -38,6 +39,12 @@ export interface LogResult {
 }
 
 export interface FunctionX {
+  id: number;
+  type: string;
+  meta: object;
+}
+
+export interface DeviceX {
   id: number;
   type: string;
   meta: object;
