@@ -29,7 +29,7 @@ Series will be grouped by all matching functions.
 
 Make sure docker daemon is up and running.
 There is a script ```./grafana-dev.sh``` that starts a Grafana server and maps
-the dist dir into grafa plugins.
+the dist dir into grafana plugins.
 
 It automatically installs following plugins:
 * grafana-piechart-panel

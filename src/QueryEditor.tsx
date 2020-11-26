@@ -148,6 +148,12 @@ export class QueryEditor extends PureComponent<Props, State> {
     this.props.onRunQuery();
   };
 
+  onDeviceMetaJoin = (): void => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, joinDeviceMeta: !query.joinDeviceMeta });
+    this.props.onRunQuery();
+  };
+
   tooltipGroupBy = (
     <>
       Group series by some meta key or payload <code>msg</code> field. Defaults to Function ID.
@@ -276,7 +282,12 @@ export class QueryEditor extends PureComponent<Props, State> {
               tooltip={this.tooltipMessageFrom}
             />
             <FormField labelWidth={40} label={'Linked with'} onChange={this.onLinkChange} value={query.linkKey} />
-            <Switch label={'Meta to fields'} checked={query.metaAsFields} onChange={this.onMetaAsFields} />
+            <div>
+              <Switch label={'Meta to fields'} checked={query.metaAsFields} onChange={this.onMetaAsFields} />
+              <div hidden={!query.metaAsFields}>
+                <Switch label={'Add device meta'} checked={query.joinDeviceMeta} onChange={this.onDeviceMetaJoin} />
+              </div>
+            </div>
           </div>
         </div>
         <Switch label={'Current state only'} checked={query.stateOnly} onChange={this.onStateOnlyChange} />

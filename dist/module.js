@@ -487,6 +487,15 @@ function (_super) {
     });
   };
 
+  DataSource.prototype.fetchDevices = function (installationId) {
+    return this.backendSrv.datasourceRequest({
+      method: 'GET',
+      url: this.settings.url + "/api/v2/devicex/" + installationId
+    }).then(function (result) {
+      return result.data;
+    });
+  };
+
   DataSource.prototype.fetchFilteredFunctions = function (installationId, filter) {
     var queryParams = filter.map(function (entry) {
       return encodeURIComponent(entry.key) + '=' + encodeURIComponent(entry.value);
@@ -858,7 +867,7 @@ function (_super) {
 
   DataSource.prototype.queryTableData = function (target, from, to) {
     return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, Promise, function () {
-      var targetData, targetDatapoints, targetDatapointsName, columns, metaColumns, functions, mappings, topics, functions_1, functions_1_1, func, key, results, _a, lastMsg, results_2, results_2_1, logResult, _b, _c, logEntry, matchingFunctions, matchingFunctions_2, matchingFunctions_2_1, matchingFunction, msg, link, tmpMsg, group, tmpGroup, dps, dat, row, metaColumns_1, metaColumns_1_1, key;
+      var targetData, targetDatapoints, targetDatapointsName, columns, metaColumns, functions, mappings, topics, devices, functions_1, functions_1_1, func, key, deviceId, targetDevice, key, virtualKey, results, _a, lastMsg, results_2, results_2_1, logResult, _b, _c, logEntry, matchingFunctions, matchingFunctions_2, matchingFunctions_2_1, matchingFunction, msg, link, tmpMsg, group, tmpGroup, dps, dat, row, metaColumns_1, metaColumns_1_1, key, dev, metaKey;
 
       var e_6, _d, e_7, _e, e_8, _f, e_9, _g, e_10, _h;
 
@@ -893,6 +902,24 @@ function (_super) {
               , null];
             }
 
+            devices = new Map();
+            if (!target.joinDeviceMeta) return [3
+            /*break*/
+            , 3];
+            return [4
+            /*yield*/
+            , this.fetchDevices(target.installationId).then(function (devs) {
+              devs.forEach(function (dev) {
+                devices.set(dev.id.toString(), dev);
+              });
+            })];
+
+          case 2:
+            _j.sent();
+
+            _j.label = 3;
+
+          case 3:
             if (target.metaAsFields) {
               try {
                 for (functions_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(functions), functions_1_1 = functions_1.next(); !functions_1_1.done; functions_1_1 = functions_1.next()) {
@@ -908,6 +935,33 @@ function (_super) {
                       columns.push({
                         text: key
                       });
+                    }
+                  }
+
+                  if (target.joinDeviceMeta) {
+                    deviceId = func.meta['device_id'];
+
+                    if (deviceId !== '') {
+                      targetDevice = devices.get(deviceId);
+
+                      if (!targetDevice) {
+                        continue;
+                      }
+
+                      for (key in targetDevice.meta) {
+                        if (key === 'name') {
+                          continue;
+                        }
+
+                        virtualKey = "@device." + key;
+
+                        if (metaColumns.indexOf(virtualKey) === -1) {
+                          metaColumns.push(virtualKey);
+                          columns.push({
+                            text: virtualKey
+                          });
+                        }
+                      }
                     }
                   }
                 }
@@ -926,27 +980,27 @@ function (_super) {
 
             if (!target.stateOnly) return [3
             /*break*/
-            , 3];
+            , 5];
             return [4
             /*yield*/
             , this.fetchState(target.installationId, topics)];
 
-          case 2:
+          case 4:
             _a = _j.sent();
             return [3
             /*break*/
-            , 5];
+            , 7];
 
-          case 3:
+          case 5:
             return [4
             /*yield*/
             , this.fetchLogFull(target.installationId, from, to, topics)];
 
-          case 4:
+          case 6:
             _a = _j.sent();
-            _j.label = 5;
+            _j.label = 7;
 
-          case 5:
+          case 7:
             results = _a;
             lastMsg = new Map();
 
@@ -1028,10 +1082,25 @@ function (_super) {
                             for (metaColumns_1 = (e_10 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(metaColumns)), metaColumns_1_1 = metaColumns_1.next(); !metaColumns_1_1.done; metaColumns_1_1 = metaColumns_1.next()) {
                               key = metaColumns_1_1.value;
 
-                              if (matchingFunction.meta[key]) {
-                                row.push(matchingFunction.meta[key]);
+                              if (key.startsWith('@device.')) {
+                                if (matchingFunction.meta['device_id']) {
+                                  dev = devices.get(matchingFunction.meta['device_id']);
+                                  metaKey = key.substring(8);
+
+                                  if (dev && dev.meta[metaKey]) {
+                                    row.push(dev.meta[metaKey]);
+                                  } else {
+                                    row.push('');
+                                  }
+                                } else {
+                                  row.push('');
+                                }
                               } else {
-                                row.push('');
+                                if (matchingFunction.meta[key]) {
+                                  row.push(matchingFunction.meta[key]);
+                                } else {
+                                  row.push('');
+                                }
                               }
                             }
                           } catch (e_10_1) {
@@ -1488,6 +1557,17 @@ function (_super) {
       _this.props.onRunQuery();
     };
 
+    _this.onDeviceMetaJoin = function () {
+      var _a = _this.props,
+          onChange = _a.onChange,
+          query = _a.query;
+      onChange(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])(Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__assign"])({}, query), {
+        joinDeviceMeta: !query.joinDeviceMeta
+      }));
+
+      _this.props.onRunQuery();
+    };
+
     _this.tooltipGroupBy = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "Group series by some meta key or payload ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "msg"), " field. Defaults to Function ID.");
     _this.tooltipNameBy = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "This will name series based on some meta key.", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("br", null), "Defaults to ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "name"), ".");
     _this.tooltipMessageFrom = react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_1___default.a.Fragment, null, "Using this field will join matching functions with the same filter, but the type changed to this field. The msg field will be overwritten by messages matching this type, linked through ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("code", null, "device_id"), " meta key. Useful for eg. joining positional data. ", react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("br", null), "This field is only applied on table data.");
@@ -1724,11 +1804,17 @@ function (_super) {
       label: 'Linked with',
       onChange: this.onLinkChange,
       value: query.linkKey
-    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(Switch, {
+    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", null, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(Switch, {
       label: 'Meta to fields',
       checked: query.metaAsFields,
       onChange: this.onMetaAsFields
-    }))), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(Switch, {
+    }), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement("div", {
+      hidden: !query.metaAsFields
+    }, react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(Switch, {
+      label: 'Add device meta',
+      checked: query.joinDeviceMeta,
+      onChange: this.onDeviceMetaJoin
+    }))))), react__WEBPACK_IMPORTED_MODULE_1___default.a.createElement(Switch, {
       label: 'Current state only',
       checked: query.stateOnly,
       onChange: this.onStateOnlyChange
