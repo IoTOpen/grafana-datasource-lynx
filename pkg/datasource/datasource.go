@@ -7,26 +7,19 @@ import (
 
 	"github.com/IoTOpen/go-lynx"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
 // LynxDataSource saticfies the QueryDataHandler interface
 type LynxDataSource struct {
-	im        instancemgmt.InstanceManager
-	apiClient *lynx.Client
-	logger    log.Logger
+	logger log.Logger
 }
 
 // NewDatasource create a new LynxDatasource
 func NewDatasource() *LynxDataSource {
-	lynxAPIClient := lynx.NewClient(&lynx.Options{
-		Authenticator: lynx.AuthApiKey{},
-	})
 	return &LynxDataSource{
-		apiClient: lynxAPIClient,
-		logger:    log.New(),
+		logger: log.New(),
 	}
 }
 
@@ -45,10 +38,23 @@ func (ds *LynxDataSource) QueryData(ctx context.Context, req *backend.QueryDataR
 
 // CheckHealth checks if everythin is up and running properly
 func (ds *LynxDataSource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
-	res := &backend.CheckHealthResult{}
-	// TODO make ping request to Lynx-api
-	res.Status = backend.HealthStatusOk
-	res.Message = "OK"
+	res := &backend.CheckHealthResult{
+		Status:  backend.HealthStatusOk,
+		Message: "OK",
+	}
+	ctxData := &InstanceContext{}
+	if err := json.Unmarshal(req.PluginContext.DataSourceInstanceSettings.JSONData, ctxData); err != nil {
+		return nil, err
+	}
+	client := lynx.NewClient(&lynx.Options{
+		Authenticator: lynx.AuthApiKey{Key: ctxData.APIkey},
+		ApiBase:       ctxData.URL,
+	})
+	if err := client.Ping(); err != nil {
+		res.Status = backend.HealthStatusError
+		res.Message = err.Error()
+		ds.logger.Error("Error connecting to Lynx API", "err", err)
+	}
 	return res, nil
 }
 
