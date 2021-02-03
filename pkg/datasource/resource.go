@@ -272,6 +272,7 @@ func fetchLog(client *lynx.Client, data *BackendQueryRequest, topicFilter []stri
 			return nil, err
 		}
 		for _, entry := range status {
+			entry.Topic = fmt.Sprintf("%d/%s", entry.ClientID, entry.Topic)
 			logResult = append(logResult, *entry)
 		}
 	} else {
