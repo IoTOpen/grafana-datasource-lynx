@@ -2,6 +2,9 @@
   "type": "datasource",
   "name": "IoTOpen datasource",
   "id": "iotopen-datasource",
+  "backend": true,
+  "executable": "lynx_datasource_backend",
+  "alerting": true,
   "metrics": true,
   "info": {
     "description": "Fetch data from IoT Open",

@@ -2,6 +2,9 @@
   "type": "datasource",
   "name": "IoTOpen datasource",
   "id": "iotopen-datasource",
+  "backend": true,
+  "executable": "lynx_datasource_backend",
+  "alerting": true,
   "metrics": true,
   "info": {
     "description": "Fetch data from IoT Open",
@@ -24,8 +27,8 @@
       }
     ],
     "screenshots": [],
-    "version": "1.0.2",
-    "updated": "2020-11-26"
+    "version": "2.1.0",
+    "updated": "2021-02-03"
   },
   "routes": [
     {
