@@ -459,8 +459,8 @@ function (_super) {
 
   DataSource.prototype.backendAPIRequest = function (obj, from, to) {
     var job = obj;
-    job.from = from / 1000 >> 0;
-    job.to = to / 1000 >> 0;
+    job.from = from / 1000;
+    job.to = to / 1000;
     var data = JSON.stringify(job);
     return this.backendSrv.post("/api/datasources/" + this.settings.id + "/resources/lynx-api", data).then(function (result) {
       return result;

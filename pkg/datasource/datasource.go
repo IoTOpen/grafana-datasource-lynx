@@ -23,7 +23,7 @@ func NewDatasource() *LynxDataSource {
 	}
 }
 
-// QueryData ...
+// QueryData handler for data queries
 func (ds *LynxDataSource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	ctxData := &InstanceContext{}
 	if err := json.Unmarshal(req.PluginContext.DataSourceInstanceSettings.JSONData, ctxData); err != nil {

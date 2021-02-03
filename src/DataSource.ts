@@ -19,8 +19,8 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
 
   backendAPIRequest(obj: MyQuery, from: number, to: number): Promise<TimeSeries[]> {
     const job: any = obj;
-    job.from = (from / 1000) >> 0;
-    job.to = (to / 1000) >> 0;
+    job.from = from / 1000;
+    job.to = to / 1000;
     let data = JSON.stringify(job);
     return this.backendSrv
       .post(`/api/datasources/${this.settings.id}/resources/lynx-api`, data)

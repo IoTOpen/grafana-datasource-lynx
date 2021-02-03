@@ -3,6 +3,7 @@ package datasource
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"time"
 
@@ -27,7 +28,7 @@ func (ds *LynxDataSource) LynxAPIHandler(w http.ResponseWriter, r *http.Request)
 	if data.TableData {
 		res, err := queryTableData(ctxData, data)
 		if err != nil {
-			ds.logger.Debug("Lynx API request error", "error", err)
+			ds.logger.Debug("Lynx API request error", "err", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -38,7 +39,7 @@ func (ds *LynxDataSource) LynxAPIHandler(w http.ResponseWriter, r *http.Request)
 	} else {
 		res, err := queryTimeSeries(ctxData, data)
 		if err != nil {
-			ds.logger.Debug("Lynx API request error", "error", err)
+			ds.logger.Debug("Lynx API request error", "err", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -74,7 +75,6 @@ func queryTimeSeries(ctx *InstanceContext, data *BackendQueryRequest) ([]*TimeSe
 	targetDP := map[string][][]float64{}
 	targetDPNames := map[string]string{}
 	for _, entry := range logResult {
-
 		functions, ok := logTopicMappings[entry.Topic]
 		if ok {
 			for _, f := range functions {
@@ -145,13 +145,12 @@ func queryTableData(ctx *InstanceContext, data *BackendQueryRequest) ([]*TableDa
 	}
 	if data.MessageFrom != "" {
 		filter["type"] = data.MessageFrom
+		tmpFn, err := client.GetFunctions(data.InstallationID, filter)
+		if err != nil {
+			return nil, err
+		}
+		fn = unique(append(fn, tmpFn...))
 	}
-	tmpFn, err := client.GetFunctions(data.InstallationID, filter)
-	if err != nil {
-		return nil, err
-	}
-
-	fn = unique(append(fn, tmpFn...))
 	logTopicMappings := createLogTopicMappings(data.ClientID, fn)
 	var topicFilter []string
 	for k := range logTopicMappings {
@@ -267,12 +266,24 @@ func createLogTopicMappings(clientID int64, fn []*lynx.Function) map[string][]*l
 func fetchLog(client *lynx.Client, data *BackendQueryRequest, topicFilter []string) ([]lynx.LogEntry, error) {
 	var logResult []lynx.LogEntry
 	var offset int
-	if !data.StateOnly {
+	if data.StateOnly {
+		status, err := client.Status(data.InstallationID, topicFilter)
+		if err != nil {
+			return nil, err
+		}
+		for _, entry := range status {
+			logResult = append(logResult, *entry)
+		}
+	} else {
+		sec, dec := math.Modf(data.From)
+		from := time.Unix(int64(sec), int64(dec*(1e9)))
+		sec, dec = math.Modf(data.To)
+		to := time.Unix(int64(sec), int64(dec*(1e9)))
 		for {
 			log, err := client.V3().Log(data.InstallationID, &lynx.LogOptionsV3{
 				TopicFilter: topicFilter,
-				From:        time.Unix(int64(data.From), 0),
-				To:          time.Unix(int64(data.To), 0),
+				From:        from,
+				To:          to,
 				Order:       lynx.LogOrderAsc,
 			})
 			if err != nil {
@@ -283,14 +294,6 @@ func fetchLog(client *lynx.Client, data *BackendQueryRequest, topicFilter []stri
 			if offset >= int(log.Total) {
 				break
 			}
-		}
-	} else {
-		status, err := client.Status(data.InstallationID, topicFilter)
-		if err != nil {
-			return nil, err
-		}
-		for _, entry := range status {
-			logResult = append(logResult, *entry)
 		}
 	}
 	return logResult, nil
