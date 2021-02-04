@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/IoTOpen/go-lynx"
@@ -78,7 +79,7 @@ func queryTimeSeries(ctx *InstanceContext, data *BackendQueryRequest) ([]*TimeSe
 		functions, ok := logTopicMappings[entry.Topic]
 		if ok {
 			for _, f := range functions {
-				var group string
+				group := strconv.FormatInt(f.ID, 10)
 				if data.GroupBy != "" {
 					v, _ := f.Meta[data.GroupBy]
 					if data.GroupBy == "type" {
@@ -196,7 +197,7 @@ func queryTableData(ctx *InstanceContext, data *BackendQueryRequest) ([]*TableDa
 					}
 					entry.Message = v
 				}
-				var group string
+				group := strconv.FormatInt(f.ID, 10)
 				if data.GroupBy != "" {
 					group, _ := f.Meta[data.GroupBy]
 					if data.GroupBy == "type" {
