@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -29,8 +30,13 @@ func (ds *LynxDataSource) LynxAPIHandler(w http.ResponseWriter, r *http.Request)
 	if data.TableData {
 		res, err := queryTableData(ctxData, data)
 		if err != nil {
+			code := http.StatusInternalServerError
+			if lynxErr, ok := err.(lynx.Error); ok {
+				code = lynxErr.Code
+				err = lynxErr
+			}
 			ds.logger.Debug("Lynx API request error", "err", err)
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(code)
 			return
 		}
 		if err := json.NewEncoder(w).Encode(res); err != nil {
@@ -40,8 +46,13 @@ func (ds *LynxDataSource) LynxAPIHandler(w http.ResponseWriter, r *http.Request)
 	} else {
 		res, err := queryTimeSeries(ctxData, data)
 		if err != nil {
+			code := http.StatusInternalServerError
+			if lynxErr, ok := err.(lynx.Error); ok {
+				code = lynxErr.Code
+				err = lynxErr
+			}
 			ds.logger.Debug("Lynx API request error", "err", err)
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(code)
 			return
 		}
 		if err := json.NewEncoder(w).Encode(res); err != nil {
@@ -73,8 +84,11 @@ func queryTimeSeries(ctx *InstanceContext, data *BackendQueryRequest) ([]*TimeSe
 	if err != nil {
 		return nil, err
 	}
-	targetDP := map[string][][]float64{}
-	targetDPNames := map[string]string{}
+	type dataPoint struct {
+		name   string
+		values [][]float64
+	}
+	target := map[string]*dataPoint{}
 	for _, entry := range logResult {
 		functions, ok := logTopicMappings[entry.Topic]
 		if ok {
@@ -92,28 +106,31 @@ func queryTimeSeries(ctx *InstanceContext, data *BackendQueryRequest) ([]*TimeSe
 				if data.NameBy == "" {
 					data.NameBy = "name"
 				}
-
-				targetDPNames[group] = f.Meta[data.NameBy]
-				v, ok := targetDP[group]
+				dp, ok := target[group]
 				if !ok {
-					targetDP[group] = make([][]float64, 0)
+					dp = &dataPoint{
+						name:   "",
+						values: make([][]float64, 0),
+					}
+					target[group] = dp
 				}
-				v = append(v, []float64{entry.Value, entry.Timestamp * 1000})
-				targetDP[group] = v
+				dp.name = f.Meta[data.NameBy]
+				dp.values = append(dp.values, []float64{entry.Value, entry.Timestamp * 1000})
 			}
 		}
 	}
-
+	mapKeys := make([]string, 0, len(target))
+	for t := range target {
+		mapKeys = append(mapKeys, t)
+	}
+	sort.Strings(mapKeys)
 	var res []*TimeSeriesQueryResponse
-	for key, value := range targetDP {
-		name, ok := targetDPNames[key]
-		if !ok {
-			name = key
-		}
+	for _, key := range mapKeys {
+		dp, _ := target[key]
 		res = append(res, &TimeSeriesQueryResponse{
 			RefID:      data.RefID,
-			Target:     name,
-			Datapoints: value,
+			Target:     dp.name,
+			Datapoints: dp.values,
 		})
 	}
 	return res, err
@@ -179,8 +196,11 @@ func queryTableData(ctx *InstanceContext, data *BackendQueryRequest) ([]*TableDa
 		return nil, err
 	}
 	lastMsg := map[string]string{}
-	targetDP := map[string][][]interface{}{}
-	targetDPNames := map[string]string{}
+	type dataPoint struct {
+		name   string
+		values [][]interface{}
+	}
+	target := map[string]*dataPoint{}
 	for _, entry := range logResult {
 		if matchingFn, ok := logTopicMappings[entry.Topic]; ok {
 			for _, f := range matchingFn {
@@ -210,12 +230,14 @@ func queryTableData(ctx *InstanceContext, data *BackendQueryRequest) ([]*TableDa
 				if data.NameBy == "" {
 					data.NameBy = "name"
 				}
-				targetDPNames[group] = f.Meta[data.NameBy]
-
-				dps, ok := targetDP[group]
+				dp, ok := target[group]
 				if !ok {
-					targetDP[group] = make([][]interface{}, 0)
+					dp = &dataPoint{
+						values: make([][]interface{}, 0),
+					}
+					target[group] = dp
 				}
+				target[group].name = f.Meta[data.NameBy]
 				row := []interface{}{
 					entry.Timestamp * 1000,
 					f.Meta[data.NameBy],
@@ -231,18 +253,22 @@ func queryTableData(ctx *InstanceContext, data *BackendQueryRequest) ([]*TableDa
 						}
 					}
 				}
-				dps = append(dps, row)
-				targetDP[group] = dps
+				dp.values = append(dp.values, row)
 			}
 		}
 	}
+	mapKeys := make([]string, 0, len(target))
+	for t := range target {
+		mapKeys = append(mapKeys, t)
+	}
+	sort.Strings(mapKeys)
 	var res []*TableDataQueryResponse
-	for key, value := range targetDP {
-		name, _ := targetDPNames[key]
+	for _, key := range mapKeys {
+		dp, _ := target[key]
 		res = append(res, &TableDataQueryResponse{
 			RefID:   data.RefID,
-			Name:    name,
-			Rows:    value,
+			Name:    dp.name,
+			Rows:    dp.values,
 			Columns: columns,
 		})
 	}
