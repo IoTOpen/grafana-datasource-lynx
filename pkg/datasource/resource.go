@@ -312,6 +312,7 @@ func fetchLog(client *lynx.Client, data *BackendQueryRequest, topicFilter []stri
 				TopicFilter: topicFilter,
 				From:        from,
 				To:          to,
+				Offset:      int64(offset),
 				Order:       lynx.LogOrderAsc,
 			})
 			if err != nil {
