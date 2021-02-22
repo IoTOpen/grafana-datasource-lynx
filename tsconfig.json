@@ -6,6 +6,5 @@
     "baseUrl": "./src",
     "typeRoots": ["./node_modules/@types"],
     "noImplicitAny": false,
-    "esModuleInterop": true
   }
 }
