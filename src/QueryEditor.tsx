@@ -36,14 +36,10 @@ export class QueryEditor extends PureComponent<Props, State> {
         selectedInstallation = installations[0];
       }
       if (this.props.query.installationId !== 0) {
-        const tmp = installations.find(x => x.id === this.props.query.installationId);
+        const tmp = installations.find(i => i.id === this.props.query.installationId);
         if (tmp !== undefined) {
           selectedInstallation = tmp;
-        } else {
-          //         this.onSelectInstallation({ value: selectedInstallation });
         }
-      } else {
-        //        this.onSelectInstallation({ value: selectedInstallation });
       }
       this.onSelectInstallation({ value: selectedInstallation });
       this.setState({
@@ -59,11 +55,14 @@ export class QueryEditor extends PureComponent<Props, State> {
     if (selected.value == null) {
       return;
     }
+    this.setState({ selectedInstallation: selected });
     onChange({ ...query, installationId: selected.value.id, clientId: selected.value.client_id });
     this.props.datasource.fetchFunctions(Number(selected.value.id)).then(functions => {
       if (selected.value !== undefined) {
-        this.setState({ functions: functions, selectedInstallation: selected });
-        this.props.onRunQuery();
+        if (this.state.selectedInstallation.value === selected.value) {
+          this.setState({ functions: functions, selectedInstallation: selected });
+          this.props.onRunQuery();
+        }
       }
     });
   };
