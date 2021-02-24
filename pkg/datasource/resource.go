@@ -15,7 +15,6 @@ import (
 
 // LynxAPIHandler resource API endpoint handler
 func (ds *LynxDataSource) LynxAPIHandler(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
 	data := &BackendQueryRequest{}
 	if err := json.NewDecoder(r.Body).Decode(data); err != nil {
 		ds.logger.Debug("Decoder error", "error", err)
@@ -178,13 +177,18 @@ func queryTableData(ctx *InstanceContext, data *BackendQueryRequest) ([]*TableDa
 		return nil, fmt.Errorf("Empty topicfilter")
 	}
 	columns := []Column{{"Time"}, {"name"}, {"value"}, {"msg"}}
-	metaColumns := map[string]bool{}
+	metaColumnsMap := map[string]bool{}
 	if data.MetaAsFields {
 		for _, f := range fn {
+			metaKeys := make([]string, 0, len(f.Meta))
 			for k := range f.Meta {
+				metaKeys = append(metaKeys, k)
+			}
+			sort.Strings(metaKeys)
+			for _, k := range metaKeys {
 				if k != "name" {
-					if _, ok := metaColumns[k]; !ok {
-						metaColumns[k] = true
+					if _, ok := metaColumnsMap[k]; !ok {
+						metaColumnsMap[k] = true
 						columns = append(columns, Column{k})
 					}
 				}
@@ -201,6 +205,7 @@ func queryTableData(ctx *InstanceContext, data *BackendQueryRequest) ([]*TableDa
 		values [][]interface{}
 	}
 	target := map[string]*dataPoint{}
+	metaColumns := columns[4:]
 	for _, entry := range logResult {
 		if matchingFn, ok := logTopicMappings[entry.Topic]; ok {
 			for _, f := range matchingFn {
@@ -245,8 +250,8 @@ func queryTableData(ctx *InstanceContext, data *BackendQueryRequest) ([]*TableDa
 					entry.Message,
 				}
 				if data.MetaAsFields {
-					for key := range metaColumns {
-						if v, ok := f.Meta[key]; ok {
+					for _, column := range metaColumns {
+						if v, ok := f.Meta[column.Text]; ok {
 							row = append(row, v)
 						} else {
 							row = append(row, "")
