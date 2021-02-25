@@ -224,13 +224,14 @@ func queryTableData(ctx *InstanceContext, data *BackendQueryRequest) ([]*TableDa
 				}
 				group := strconv.FormatInt(f.ID, 10)
 				if data.GroupBy != "" {
-					group, _ := f.Meta[data.GroupBy]
+					v, _ := f.Meta[data.GroupBy]
 					if data.GroupBy == "type" {
-						group = f.Type
+						v = f.Type
 					}
-					if group == "" {
-						group = entry.Message
+					if v == "" {
+						v = entry.Message
 					}
+					group = v
 				}
 				if data.NameBy == "" {
 					data.NameBy = "name"
