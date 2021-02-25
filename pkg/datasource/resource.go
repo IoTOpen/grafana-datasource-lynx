@@ -229,8 +229,9 @@ func queryTableData(ctx *InstanceContext, data *BackendQueryRequest) ([]*TableDa
 						v = f.Type
 					}
 					if v == "" {
-						group = entry.Message
+						v = entry.Message
 					}
+					group = v
 				}
 				if data.NameBy == "" {
 					data.NameBy = "name"
