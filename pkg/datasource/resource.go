@@ -22,55 +22,40 @@ func (ds *LynxDataSource) LynxAPIHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	ctx := httpadapter.PluginConfigFromContext(r.Context())
-	ctxData := &InstanceContext{}
-	if err := json.Unmarshal(ctx.DataSourceInstanceSettings.JSONData, ctxData); err != nil {
+	instance, err := ds.getDSInstance(ctx)
+	if err != nil {
+		ds.logger.Error("Error loading datasource", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	var res interface{}
 	if data.TableData {
-		res, err := queryTableData(ctxData, data)
-		if err != nil {
-			code := http.StatusInternalServerError
-			if lynxErr, ok := err.(lynx.Error); ok {
-				code = lynxErr.Code
-				err = lynxErr
-			}
-			ds.logger.Debug("Lynx API request error", "err", err)
-			w.WriteHeader(code)
-			return
-		}
-		if err := json.NewEncoder(w).Encode(res); err != nil {
-			ds.logger.Error("couldn't write json response: %s", err.Error())
-			return
-		}
+		res, err = instance.queryTableData(data)
 	} else {
-		res, err := queryTimeSeries(ctxData, data)
-		if err != nil {
-			code := http.StatusInternalServerError
-			if lynxErr, ok := err.(lynx.Error); ok {
-				code = lynxErr.Code
-				err = lynxErr
-			}
-			ds.logger.Debug("Lynx API request error", "err", err)
-			w.WriteHeader(code)
-			return
+		res, err = instance.queryTimeSeries(data)
+	}
+	if err != nil {
+		code := http.StatusInternalServerError
+		if lynxErr, ok := err.(lynx.Error); ok {
+			code = lynxErr.Code
+			err = lynxErr
 		}
-		if err := json.NewEncoder(w).Encode(res); err != nil {
-			ds.logger.Error("couldn't write json response: %s", err.Error())
-			return
-		}
+		ds.logger.Debug("Lynx API request error", "error", err)
+		w.WriteHeader(code)
+		return
+	}
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		ds.logger.Error("couldn't write json response: %s", err.Error())
+		return
 	}
 }
 
-func queryTimeSeries(ctx *InstanceContext, data *BackendQueryRequest) ([]*TimeSeriesQueryResponse, error) {
-	client := lynx.NewClient(&lynx.Options{
-		Authenticator: lynx.AuthApiKey{Key: ctx.APIkey},
-		ApiBase:       ctx.URL,
-	})
+func (ds *LynxDataSourceInstance) queryTimeSeries(data *BackendQueryRequest) ([]*TimeSeriesQueryResponse, error) {
 	filter := map[string]string{}
 	for _, m := range data.Meta {
 		filter[m.Key] = m.Value
 	}
-	functions, err := client.GetFunctions(data.InstallationID, filter)
+	functions, err := ds.client.GetFunctions(data.InstallationID, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +64,7 @@ func queryTimeSeries(ctx *InstanceContext, data *BackendQueryRequest) ([]*TimeSe
 	for k := range logTopicMappings {
 		topicFilter = append(topicFilter, k)
 	}
-	logResult, err := fetchLog(client, data, topicFilter)
+	logResult, err := fetchLog(ds.client, data, topicFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -147,22 +132,18 @@ func unique(fn []*lynx.Function) []*lynx.Function {
 	return list
 }
 
-func queryTableData(ctx *InstanceContext, data *BackendQueryRequest) ([]*TableDataQueryResponse, error) {
-	client := lynx.NewClient(&lynx.Options{
-		Authenticator: lynx.AuthApiKey{Key: ctx.APIkey},
-		ApiBase:       ctx.URL,
-	})
+func (ds *LynxDataSourceInstance) queryTableData(data *BackendQueryRequest) ([]*TableDataQueryResponse, error) {
 	filter := map[string]string{}
 	for _, m := range data.Meta {
 		filter[m.Key] = m.Value
 	}
-	fn, err := client.GetFunctions(data.InstallationID, filter)
+	fn, err := ds.client.GetFunctions(data.InstallationID, filter)
 	if err != nil {
 		return nil, err
 	}
 	if data.MessageFrom != "" {
 		filter["type"] = data.MessageFrom
-		tmpFn, err := client.GetFunctions(data.InstallationID, filter)
+		tmpFn, err := ds.client.GetFunctions(data.InstallationID, filter)
 		if err != nil {
 			return nil, err
 		}
@@ -195,7 +176,7 @@ func queryTableData(ctx *InstanceContext, data *BackendQueryRequest) ([]*TableDa
 			}
 		}
 	}
-	logResult, err := fetchLog(client, data, topicFilter)
+	logResult, err := fetchLog(ds.client, data, topicFilter)
 	if err != nil {
 		return nil, err
 	}

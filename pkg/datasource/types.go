@@ -40,9 +40,3 @@ type TableDataQueryResponse struct {
 type Column struct {
 	Text string `json:"text"`
 }
-
-// InstanceContext request context
-type InstanceContext struct {
-	APIkey string `json:"apiKey"`
-	URL    string `json:"url"`
-}

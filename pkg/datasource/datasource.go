@@ -7,31 +7,66 @@ import (
 
 	"github.com/IoTOpen/go-lynx"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
 // LynxDataSource saticfies the QueryDataHandler interface
-type LynxDataSource struct {
-	logger log.Logger
-}
+
+type (
+	LynxDataSource struct {
+		logger log.Logger
+		im     instancemgmt.InstanceManager
+	}
+	LynxDataSourceInstance struct {
+		client *lynx.Client
+	}
+)
 
 // NewDatasource create a new LynxDatasource
 func NewDatasource() *LynxDataSource {
 	return &LynxDataSource{
+		im:     datasource.NewInstanceManager(newDatasourceInstance),
 		logger: log.New(),
 	}
 }
 
+func newDatasourceInstance(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	dataSourceConfig := &struct {
+		APIkey string `json:"apiKey"`
+		URL    string `json:"url"`
+	}{}
+	if err := json.Unmarshal(settings.JSONData, dataSourceConfig); err != nil {
+		return nil, err
+	}
+	client := lynx.NewClient(&lynx.Options{
+		Authenticator: lynx.AuthApiKey{Key: dataSourceConfig.APIkey},
+		ApiBase:       dataSourceConfig.URL,
+	})
+	return &LynxDataSourceInstance{
+		client: client,
+	}, nil
+}
+
+func (ds *LynxDataSource) getDSInstance(pluginContext backend.PluginContext) (*LynxDataSourceInstance, error) {
+	i, err := ds.im.Get(pluginContext)
+	if err != nil {
+		return nil, err
+	}
+	return i.(*LynxDataSourceInstance), nil
+}
+
 // QueryData handler for data queries
 func (ds *LynxDataSource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-	ctxData := &InstanceContext{}
-	if err := json.Unmarshal(req.PluginContext.DataSourceInstanceSettings.JSONData, ctxData); err != nil {
+	instance, err := ds.getDSInstance(req.PluginContext)
+	if err != nil {
 		return nil, err
 	}
 	response := backend.NewQueryDataResponse()
 	for _, q := range req.Queries {
-		response.Responses[q.RefID] = readQuery(ctxData, q)
+		response.Responses[q.RefID] = readQuery(instance, q)
 	}
 	return response, nil
 }
@@ -42,23 +77,22 @@ func (ds *LynxDataSource) CheckHealth(ctx context.Context, req *backend.CheckHea
 		Status:  backend.HealthStatusOk,
 		Message: "OK",
 	}
-	ctxData := &InstanceContext{}
-	if err := json.Unmarshal(req.PluginContext.DataSourceInstanceSettings.JSONData, ctxData); err != nil {
-		return nil, err
+	instance, err := ds.getDSInstance(req.PluginContext)
+	if err != nil {
+		res.Status = backend.HealthStatusError
+		res.Message = "Error getting datasource instance"
+		ds.logger.Error("Error getting datasource instance", "error", err)
+		return res, nil
 	}
-	client := lynx.NewClient(&lynx.Options{
-		Authenticator: lynx.AuthApiKey{Key: ctxData.APIkey},
-		ApiBase:       ctxData.URL,
-	})
-	if err := client.Ping(); err != nil {
+	if err := instance.client.Ping(); err != nil {
 		res.Status = backend.HealthStatusError
 		res.Message = err.Error()
-		ds.logger.Error("Error connecting to Lynx API", "err", err)
+		ds.logger.Error("Error connecting to Lynx API", "error", err)
 	}
 	return res, nil
 }
 
-func readQuery(ctx *InstanceContext, query backend.DataQuery) (response backend.DataResponse) {
+func readQuery(instace *LynxDataSourceInstance, query backend.DataQuery) (response backend.DataResponse) {
 	model := &BackendQueryRequest{}
 	if err := json.Unmarshal(query.JSON, model); err != nil {
 		response.Error = err
@@ -66,7 +100,7 @@ func readQuery(ctx *InstanceContext, query backend.DataQuery) (response backend.
 	}
 	model.From = float64(query.TimeRange.From.Unix())
 	model.To = float64(query.TimeRange.To.Unix())
-	queryResp, err := queryTimeSeries(ctx, model)
+	queryResp, err := instace.queryTimeSeries(model)
 	if err != nil {
 		response.Error = err
 		return
