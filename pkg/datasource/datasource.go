@@ -3,23 +3,20 @@ package datasource
 import (
 	"context"
 	"encoding/json"
-	"time"
-
 	"github.com/IoTOpen/go-lynx"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
-	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
-// LynxDataSource saticfies the QueryDataHandler interface
-
 type (
+	// LynxDataSource saticfies the QueryDataHandler interface
 	LynxDataSource struct {
 		logger log.Logger
 		im     instancemgmt.InstanceManager
 	}
+	// LynxDataSourceInstance handles datasource instances
 	LynxDataSourceInstance struct {
 		client *lynx.Client
 	}
@@ -93,29 +90,17 @@ func (ds *LynxDataSource) CheckHealth(ctx context.Context, req *backend.CheckHea
 }
 
 func readQuery(instace *LynxDataSourceInstance, query backend.DataQuery) (response backend.DataResponse) {
-	model := &BackendQueryRequest{}
-	if err := json.Unmarshal(query.JSON, model); err != nil {
+	queryModel := &BackendQueryRequest{}
+	if err := json.Unmarshal(query.JSON, queryModel); err != nil {
 		response.Error = err
 		return
 	}
-	model.From = float64(query.TimeRange.From.Unix())
-	model.To = float64(query.TimeRange.To.Unix())
-	queryResp, err := instace.queryTimeSeries(model)
-	if err != nil {
-		response.Error = err
-		return
+	queryModel.From = float64(query.TimeRange.From.Unix())
+	queryModel.To = float64(query.TimeRange.To.Unix())
+	if queryModel.TableData {
+		response.Frames, response.Error = instace.queryTableData(queryModel)
+	} else {
+		response.Frames, response.Error = instace.queryTimeSeries(queryModel)
 	}
-	frame := data.NewFrame(model.Type,
-		data.NewField("Time", nil, []time.Time{}),
-		data.NewField(model.Meta[0].Value, nil, []float64{}))
-
-	for _, query := range queryResp {
-		for _, dp := range query.Datapoints {
-			ts := time.Unix(0, int64(dp[1]))
-			v := dp[0]
-			frame.AppendRow(ts, v)
-		}
-	}
-	response.Frames = append(response.Frames, frame)
 	return
 }

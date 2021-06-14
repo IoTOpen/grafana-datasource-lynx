@@ -1,128 +1,82 @@
 package datasource
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/IoTOpen/go-lynx"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"math"
-	"net/http"
 	"sort"
 	"strconv"
 	"time"
-
-	"github.com/IoTOpen/go-lynx"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
 )
 
-// LynxAPIHandler resource API endpoint handler
-func (ds *LynxDataSource) LynxAPIHandler(w http.ResponseWriter, r *http.Request) {
-	data := &BackendQueryRequest{}
-	if err := json.NewDecoder(r.Body).Decode(data); err != nil {
-		ds.logger.Debug("Decoder error", "error", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	ctx := httpadapter.PluginConfigFromContext(r.Context())
-	instance, err := ds.getDSInstance(ctx)
-	if err != nil {
-		ds.logger.Error("Error loading datasource", "error", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	var res interface{}
-	if data.TableData {
-		res, err = instance.queryTableData(data)
-	} else {
-		res, err = instance.queryTimeSeries(data)
-	}
-	if err != nil {
-		code := http.StatusInternalServerError
-		if lynxErr, ok := err.(lynx.Error); ok {
-			code = lynxErr.Code
-			err = lynxErr
-		}
-		ds.logger.Debug("Lynx API request error", "error", err)
-		w.WriteHeader(code)
-		return
-	}
-	if err := json.NewEncoder(w).Encode(res); err != nil {
-		ds.logger.Error("couldn't write json response: %s", err.Error())
-		return
-	}
-}
-
-func (ds *LynxDataSourceInstance) queryTimeSeries(data *BackendQueryRequest) ([]*TimeSeriesQueryResponse, error) {
-	filter := map[string]string{}
-	for _, m := range data.Meta {
+func (ds *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQueryRequest) (data.Frames, error) {
+	filter := make(map[string]string, len(queryModel.Meta))
+	for _, m := range queryModel.Meta {
 		filter[m.Key] = m.Value
 	}
-	functions, err := ds.client.GetFunctions(data.InstallationID, filter)
+	functions, err := ds.client.GetFunctions(queryModel.InstallationID, filter)
 	if err != nil {
 		return nil, err
 	}
-	logTopicMappings := createLogTopicMappings(data.ClientID, functions)
-	var topicFilter []string
+	logTopicMappings := createLogTopicMappings(queryModel.ClientID, functions)
+	topicFilter := make([]string, 0, len(logTopicMappings))
 	for k := range logTopicMappings {
 		topicFilter = append(topicFilter, k)
 	}
-	logResult, err := fetchLog(ds.client, data, topicFilter)
+	logResult, err := fetchLog(ds.client, queryModel, topicFilter)
 	if err != nil {
 		return nil, err
 	}
-	type dataPoint struct {
-		name   string
-		values [][]float64
-	}
-	target := map[string]*dataPoint{}
+	frames := make(map[string]*data.Frame)
 	for _, entry := range logResult {
 		functions, ok := logTopicMappings[entry.Topic]
 		if ok {
-			for _, f := range functions {
-				group := strconv.FormatInt(f.ID, 10)
-				if data.GroupBy != "" {
-					v, _ := f.Meta[data.GroupBy]
-					if data.GroupBy == "type" {
-						v = f.Type
+			for _, fn := range functions {
+				group := strconv.FormatInt(fn.ID, 10)
+				if queryModel.GroupBy != "" {
+					v, _ := fn.Meta[queryModel.GroupBy]
+					if queryModel.GroupBy == "type" {
+						v = fn.Type
 					}
 					if v != "" {
 						group = v
 					}
 				}
-				if data.NameBy == "" {
-					data.NameBy = "name"
+				if queryModel.NameBy == "" {
+					queryModel.NameBy = "name"
 				}
-				dp, ok := target[group]
+				frame, ok := frames[group]
 				if !ok {
-					dp = &dataPoint{
-						name:   "",
-						values: make([][]float64, 0),
-					}
-					target[group] = dp
+					frame = data.NewFrame("",
+						data.NewField("Time", nil, []time.Time{}),
+						data.NewField("Value", nil, []float64{}))
+					frames[group] = frame
 				}
-				dp.name = f.Meta[data.NameBy]
-				dp.values = append(dp.values, []float64{entry.Value, entry.Timestamp * 1000})
+				frame.Name = fn.Meta[queryModel.NameBy]
+				sec, dec := math.Modf(entry.Timestamp)
+				ts := time.Unix(int64(sec), int64(dec*(1e9)))
+				frame.Fields[0].Append(ts)
+				frame.Fields[1].Append(entry.Value)
 			}
 		}
 	}
-	mapKeys := make([]string, 0, len(target))
-	for t := range target {
-		mapKeys = append(mapKeys, t)
+	keys := make([]string, 0, len(frames))
+	for k := range frames {
+		keys = append(keys, k)
 	}
-	sort.Strings(mapKeys)
-	var res []*TimeSeriesQueryResponse
-	for _, key := range mapKeys {
-		dp, _ := target[key]
-		res = append(res, &TimeSeriesQueryResponse{
-			RefID:      data.RefID,
-			Target:     dp.name,
-			Datapoints: dp.values,
-		})
+	sort.Strings(keys)
+	res := make(data.Frames, 0, len(keys))
+	for _, key := range keys {
+		frame, _ := frames[key]
+		res = append(res, frame)
 	}
 	return res, err
 }
 
 func unique(fn []*lynx.Function) []*lynx.Function {
-	keys := make(map[int64]bool)
-	list := []*lynx.Function{}
+	keys := make(map[int64]bool, len(fn))
+	list := make([]*lynx.Function, 0, len(fn))
 	for _, entry := range fn {
 		if _, ok := keys[entry.ID]; !ok {
 			keys[entry.ID] = true
@@ -132,138 +86,129 @@ func unique(fn []*lynx.Function) []*lynx.Function {
 	return list
 }
 
-func (ds *LynxDataSourceInstance) queryTableData(data *BackendQueryRequest) ([]*TableDataQueryResponse, error) {
-	filter := map[string]string{}
-	for _, m := range data.Meta {
+func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest) (data.Frames, error) {
+	filter := make(map[string]string, len(queryModel.Meta))
+	for _, m := range queryModel.Meta {
 		filter[m.Key] = m.Value
 	}
-	fn, err := ds.client.GetFunctions(data.InstallationID, filter)
+	fn, err := ds.client.GetFunctions(queryModel.InstallationID, filter)
 	if err != nil {
 		return nil, err
 	}
-	if data.MessageFrom != "" {
-		filter["type"] = data.MessageFrom
-		tmpFn, err := ds.client.GetFunctions(data.InstallationID, filter)
+	if queryModel.MessageFrom != "" {
+		filter["type"] = queryModel.MessageFrom
+		tmpFn, err := ds.client.GetFunctions(queryModel.InstallationID, filter)
 		if err != nil {
 			return nil, err
 		}
 		fn = unique(append(fn, tmpFn...))
 	}
-	logTopicMappings := createLogTopicMappings(data.ClientID, fn)
-	var topicFilter []string
+	logTopicMappings := createLogTopicMappings(queryModel.ClientID, fn)
+	topicFilter := make([]string, 0, len(logTopicMappings))
 	for k := range logTopicMappings {
 		topicFilter = append(topicFilter, k)
 	}
 	if len(topicFilter) == 0 {
 		return nil, fmt.Errorf("Empty topicfilter")
 	}
-	columns := []Column{{"Time"}, {"name"}, {"value"}, {"msg"}}
-	metaColumnsMap := map[string]bool{}
-	if data.MetaAsFields {
+	metaColumnsMap := make(map[string]bool, 5)
+	metaColumns := make([]string, 0, 5)
+	if queryModel.MetaAsFields {
 		for _, f := range fn {
-			metaKeys := make([]string, 0, len(f.Meta))
 			for k := range f.Meta {
-				metaKeys = append(metaKeys, k)
-			}
-			sort.Strings(metaKeys)
-			for _, k := range metaKeys {
-				if k != "name" {
-					if _, ok := metaColumnsMap[k]; !ok {
-						metaColumnsMap[k] = true
-						columns = append(columns, Column{k})
-					}
+				if k != "name" && !metaColumnsMap[k] {
+					metaColumnsMap[k] = true
+					metaColumns = append(metaColumns, k)
 				}
 			}
 		}
 	}
-	logResult, err := fetchLog(ds.client, data, topicFilter)
+	sort.Strings(metaColumns)
+	logResult, err := fetchLog(ds.client, queryModel, topicFilter)
 	if err != nil {
 		return nil, err
 	}
-	lastMsg := map[string]string{}
-	type dataPoint struct {
-		name   string
-		values [][]interface{}
-	}
-	target := map[string]*dataPoint{}
-	metaColumns := columns[4:]
+	lastMsg := make(map[string]string)
+	frames := make(map[string]*data.Frame)
 	for _, entry := range logResult {
 		if matchingFn, ok := logTopicMappings[entry.Topic]; ok {
-			for _, f := range matchingFn {
-				if data.LinkKey == "" {
-					data.LinkKey = "device_id"
+			for _, fn := range matchingFn {
+				if queryModel.LinkKey == "" {
+					queryModel.LinkKey = "device_id"
 				}
-				if data.MessageFrom != "" && f.Type == data.MessageFrom {
-					lastMsg[f.Meta[data.LinkKey]] = entry.Message
+				if queryModel.MessageFrom != "" && fn.Type == queryModel.MessageFrom {
+					lastMsg[fn.Meta[queryModel.LinkKey]] = entry.Message
 					continue
-				} else if data.MessageFrom != "" {
-					v, ok := lastMsg[f.Meta[data.LinkKey]]
+				} else if queryModel.MessageFrom != "" {
+					v, ok := lastMsg[fn.Meta[queryModel.LinkKey]]
 					if !ok {
 						continue
 					}
 					entry.Message = v
 				}
-				group := strconv.FormatInt(f.ID, 10)
-				if data.GroupBy != "" {
-					v, _ := f.Meta[data.GroupBy]
-					if data.GroupBy == "type" {
-						v = f.Type
+				group := strconv.FormatInt(fn.ID, 10)
+				if queryModel.GroupBy != "" {
+					v, _ := fn.Meta[queryModel.GroupBy]
+					if queryModel.GroupBy == "type" {
+						v = fn.Type
 					}
 					if v == "" {
 						v = entry.Message
 					}
 					group = v
 				}
-				if data.NameBy == "" {
-					data.NameBy = "name"
+				if queryModel.NameBy == "" {
+					queryModel.NameBy = "name"
 				}
-				dp, ok := target[group]
+				frame, ok := frames[group]
 				if !ok {
-					dp = &dataPoint{
-						values: make([][]interface{}, 0),
+					frame = data.NewFrame("",
+						data.NewField("Time", nil, []time.Time{}),
+						data.NewField(queryModel.NameBy, nil, []string{}),
+						data.NewField("Value", nil, []float64{}),
+						data.NewField("Message", nil, []string{}))
+					if queryModel.MetaAsFields {
+						for _, column := range metaColumns {
+							frame.Fields = append(frame.Fields,
+								data.NewField(column, nil, []string{}))
+						}
 					}
-					target[group] = dp
+					frames[group] = frame
 				}
-				target[group].name = f.Meta[data.NameBy]
-				row := []interface{}{
-					entry.Timestamp * 1000,
-					f.Meta[data.NameBy],
-					entry.Value,
-					entry.Message,
-				}
-				if data.MetaAsFields {
-					for _, column := range metaColumns {
-						if v, ok := f.Meta[column.Text]; ok {
-							row = append(row, v)
-						} else {
-							row = append(row, "")
+				frame.Name = fn.Meta[queryModel.NameBy]
+				sec, dec := math.Modf(entry.Timestamp)
+				ts := time.Unix(int64(sec), int64(dec*(1e9)))
+				frame.Fields[0].Append(ts)
+				frame.Fields[1].Append(fn.Meta[queryModel.NameBy])
+				frame.Fields[2].Append(entry.Value)
+				frame.Fields[3].Append(entry.Message)
+				if queryModel.MetaAsFields {
+					for i, c := range metaColumns {
+						field := frame.Fields[4+i]
+						field.Extend(1)
+						if v, ok := fn.Meta[c]; ok {
+							field.Set(field.Len()-1, v)
 						}
 					}
 				}
-				dp.values = append(dp.values, row)
 			}
 		}
 	}
-	mapKeys := make([]string, 0, len(target))
-	for t := range target {
-		mapKeys = append(mapKeys, t)
+	keys := make([]string, 0, len(frames))
+	for k := range frames {
+		keys = append(keys, k)
 	}
-	sort.Strings(mapKeys)
-	var res []*TableDataQueryResponse
-	for _, key := range mapKeys {
-		dp, _ := target[key]
-		res = append(res, &TableDataQueryResponse{
-			RefID:   data.RefID,
-			Name:    dp.name,
-			Rows:    dp.values,
-			Columns: columns,
-		})
+	sort.Strings(keys)
+	res := make(data.Frames, 0, len(keys))
+	for _, k := range keys {
+		frame, _ := frames[k]
+		res = append(res, frame)
 	}
 	return res, nil
 }
 
 func createLogTopicMappings(clientID int64, fn []*lynx.Function) map[string][]*lynx.Function {
-	logTopicMappings := map[string][]*lynx.Function{}
+	logTopicMappings := make(map[string][]*lynx.Function, len(fn))
 	for _, f := range fn {
 		v, ok := f.Meta["topic_read"]
 		if ok {

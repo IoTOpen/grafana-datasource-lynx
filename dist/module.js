@@ -1,4 +1,4 @@
-define(["@grafana/data","@grafana/ui","react"], function(__WEBPACK_EXTERNAL_MODULE__grafana_data__, __WEBPACK_EXTERNAL_MODULE__grafana_ui__, __WEBPACK_EXTERNAL_MODULE_react__) { return /******/ (function(modules) { // webpackBootstrap
+define(["@grafana/data","@grafana/runtime","@grafana/ui","react"], function(__WEBPACK_EXTERNAL_MODULE__grafana_data__, __WEBPACK_EXTERNAL_MODULE__grafana_runtime__, __WEBPACK_EXTERNAL_MODULE__grafana_ui__, __WEBPACK_EXTERNAL_MODULE_react__) { return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
@@ -439,8 +439,8 @@ function (_super) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DataSource", function() { return DataSource; });
 /* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ "../node_modules/tslib/tslib.es6.js");
-/* harmony import */ var _grafana_data__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @grafana/data */ "@grafana/data");
-/* harmony import */ var _grafana_data__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_grafana_data__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _grafana_runtime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @grafana/runtime */ "@grafana/runtime");
+/* harmony import */ var _grafana_runtime__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_grafana_runtime__WEBPACK_IMPORTED_MODULE_1__);
 
 
 
@@ -457,16 +457,6 @@ function (_super) {
     return _this;
   }
 
-  DataSource.prototype.backendAPIRequest = function (obj, from, to) {
-    var job = obj;
-    job.from = from / 1000;
-    job.to = to / 1000;
-    var data = JSON.stringify(job);
-    return this.backendSrv.post("/api/datasources/" + this.settings.id + "/resources/lynx-api", data).then(function (result) {
-      return result;
-    });
-  };
-
   DataSource.prototype.fetchInstallations = function () {
     return this.backendSrv.datasourceRequest({
       method: 'GET',
@@ -482,101 +472,6 @@ function (_super) {
       url: this.settings.url + "/api/v2/functionx/" + installationId
     }).then(function (result) {
       return result.data;
-    });
-  };
-
-  DataSource.prototype.query = function (options) {
-    return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__awaiter"])(this, void 0, Promise, function () {
-      var range, from, to, targets, response, jobs, targets_1, targets_1_1, target, job, data, data_1, data_1_1, series, series_1, series_1_1, serie;
-
-      var e_1, _a, e_2, _b, e_3, _c;
-
-      return Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__generator"])(this, function (_d) {
-        switch (_d.label) {
-          case 0:
-            range = options.range;
-
-            if (range == null) {
-              range = _grafana_data__WEBPACK_IMPORTED_MODULE_1__["DefaultTimeRange"];
-            }
-
-            from = range.from.valueOf();
-            to = range.to.valueOf();
-            targets = options.targets.filter(function (target) {
-              return !target.hide;
-            });
-            response = {
-              data: []
-            };
-            jobs = [];
-
-            try {
-              for (targets_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(targets), targets_1_1 = targets_1.next(); !targets_1_1.done; targets_1_1 = targets_1.next()) {
-                target = targets_1_1.value;
-                job = this.backendAPIRequest(target, from, to);
-                jobs.push(job);
-              }
-            } catch (e_1_1) {
-              e_1 = {
-                error: e_1_1
-              };
-            } finally {
-              try {
-                if (targets_1_1 && !targets_1_1.done && (_a = targets_1["return"])) _a.call(targets_1);
-              } finally {
-                if (e_1) throw e_1.error;
-              }
-            }
-
-            return [4
-            /*yield*/
-            , Promise.all(jobs)];
-
-          case 1:
-            data = _d.sent();
-
-            try {
-              for (data_1 = Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(data), data_1_1 = data_1.next(); !data_1_1.done; data_1_1 = data_1.next()) {
-                series = data_1_1.value;
-
-                if (series === null) {
-                  continue;
-                }
-
-                try {
-                  for (series_1 = (e_3 = void 0, Object(tslib__WEBPACK_IMPORTED_MODULE_0__["__values"])(series)), series_1_1 = series_1.next(); !series_1_1.done; series_1_1 = series_1.next()) {
-                    serie = series_1_1.value;
-                    response.data.push(serie);
-                  }
-                } catch (e_3_1) {
-                  e_3 = {
-                    error: e_3_1
-                  };
-                } finally {
-                  try {
-                    if (series_1_1 && !series_1_1.done && (_c = series_1["return"])) _c.call(series_1);
-                  } finally {
-                    if (e_3) throw e_3.error;
-                  }
-                }
-              }
-            } catch (e_2_1) {
-              e_2 = {
-                error: e_2_1
-              };
-            } finally {
-              try {
-                if (data_1_1 && !data_1_1.done && (_b = data_1["return"])) _b.call(data_1);
-              } finally {
-                if (e_2) throw e_2.error;
-              }
-            }
-
-            return [2
-            /*return*/
-            , response];
-        }
-      });
     });
   };
 
@@ -602,7 +497,7 @@ function (_super) {
   };
 
   return DataSource;
-}(_grafana_data__WEBPACK_IMPORTED_MODULE_1__["DataSourceApi"]);
+}(_grafana_runtime__WEBPACK_IMPORTED_MODULE_1__["DataSourceWithBackend"]);
 
 
 
@@ -1248,6 +1143,17 @@ var plugin = new _grafana_data__WEBPACK_IMPORTED_MODULE_3__["DataSourcePlugin"](
 /***/ (function(module, exports) {
 
 module.exports = __WEBPACK_EXTERNAL_MODULE__grafana_data__;
+
+/***/ }),
+
+/***/ "@grafana/runtime":
+/*!***********************************!*\
+  !*** external "@grafana/runtime" ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE__grafana_runtime__;
 
 /***/ }),
 
