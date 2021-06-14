@@ -20,23 +20,3 @@ type BackendQueryRequest struct {
 	From         float64 `json:"from"`
 	To           float64 `json:"to"`
 }
-
-// TimeSeriesQueryResponse response model for TimeSeries querys
-type TimeSeriesQueryResponse struct {
-	RefID      string      `json:"refId"`
-	Target     string      `json:"target"`
-	Datapoints [][]float64 `json:"datapoints"`
-}
-
-// TableDataQueryResponse response model for TableData querys
-type TableDataQueryResponse struct {
-	RefID   string          `json:"refId"`
-	Name    string          `json:"name"`
-	Columns []Column        `json:"columns"`
-	Rows    [][]interface{} `json:"rows"`
-}
-
-// Column ...
-type Column struct {
-	Text string `json:"text"`
-}
