@@ -43,9 +43,6 @@ func (ds *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQueryReques
 						group = v
 					}
 				}
-				if queryModel.NameBy == "" {
-					queryModel.NameBy = "name"
-				}
 				frame, ok := frames[group]
 				if !ok {
 					frame = data.NewFrame("",
@@ -53,7 +50,7 @@ func (ds *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQueryReques
 						data.NewField("Value", nil, []float64{}))
 					frames[group] = frame
 				}
-				frame.Name = fn.Meta[queryModel.NameBy]
+				frame.Name = getName(queryModel.NameBy, fn)
 				sec, dec := math.Modf(entry.Timestamp)
 				ts := time.Unix(int64(sec), int64(dec*(1e9)))
 				frame.Fields[0].Append(ts)
@@ -72,6 +69,16 @@ func (ds *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQueryReques
 		res = append(res, frame)
 	}
 	return res, err
+}
+
+func getName(nameBy string, fn *lynx.Function) string {
+	if nameBy != "" {
+		name, ok := fn.Meta[nameBy]
+		if ok {
+			return name
+		}
+	}
+	return fn.Meta["name"]
 }
 
 func unique(fn []*lynx.Function) []*lynx.Function {
@@ -157,9 +164,6 @@ func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest
 					}
 					group = v
 				}
-				if queryModel.NameBy == "" {
-					queryModel.NameBy = "name"
-				}
 				frame, ok := frames[group]
 				if !ok {
 					frame = data.NewFrame("",
@@ -175,11 +179,11 @@ func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest
 					}
 					frames[group] = frame
 				}
-				frame.Name = fn.Meta[queryModel.NameBy]
+				frame.Name = getName(queryModel.NameBy, fn)
 				sec, dec := math.Modf(entry.Timestamp)
 				ts := time.Unix(int64(sec), int64(dec*(1e9)))
 				frame.Fields[0].Append(ts)
-				frame.Fields[1].Append(fn.Meta[queryModel.NameBy])
+				frame.Fields[1].Append(getName(queryModel.NameBy, fn))
 				frame.Fields[2].Append(entry.Value)
 				frame.Fields[3].Append(entry.Message)
 				if queryModel.MetaAsFields {
