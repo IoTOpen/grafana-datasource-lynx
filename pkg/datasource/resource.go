@@ -7,6 +7,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -30,8 +31,7 @@ func (ds *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQueryReques
 	}
 	frames := make(map[string]*data.Frame)
 	for _, entry := range logResult {
-		functions, ok := logTopicMappings[entry.Topic]
-		if ok {
+		if functions, ok := logTopicMappings[entry.Topic]; ok {
 			for _, fn := range functions {
 				group := strconv.FormatInt(fn.ID, 10)
 				if queryModel.GroupBy != "" {
@@ -118,6 +118,15 @@ func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest
 	if len(topicFilter) == 0 {
 		return nil, fmt.Errorf("Empty topicfilter")
 	}
+
+	deviceMap := make(map[int64]*lynx.Device)
+	if queryModel.JoinDeviceMeta {
+		devices, err := ds.client.GetDevices(queryModel.InstallationID, map[string]string{})
+		if err != nil {
+			return nil, err
+		}
+		deviceMap = lynx.DeviceList(devices).MapByID()
+	}
 	metaColumnsMap := make(map[string]bool, 5)
 	metaColumns := make([]string, 0, 5)
 	if queryModel.MetaAsFields {
@@ -126,6 +135,23 @@ func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest
 				if k != "name" && !metaColumnsMap[k] {
 					metaColumnsMap[k] = true
 					metaColumns = append(metaColumns, k)
+				}
+			}
+			if queryModel.JoinDeviceMeta {
+				deviceID, err := strconv.ParseInt(f.Meta["device_id"], 10, 64)
+				if err != nil {
+					continue
+				}
+				dev, ok := deviceMap[deviceID]
+				if !ok {
+					continue
+				}
+				for metaKey := range dev.Meta {
+					deviceKey := fmt.Sprintf("@device.%s", metaKey)
+					if metaKey != "name" && !metaColumnsMap[deviceKey] {
+						metaColumnsMap[deviceKey] = true
+						metaColumns = append(metaColumns, deviceKey)
+					}
 				}
 			}
 		}
@@ -155,14 +181,13 @@ func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest
 				}
 				group := strconv.FormatInt(fn.ID, 10)
 				if queryModel.GroupBy != "" {
-					v, _ := fn.Meta[queryModel.GroupBy]
+					group, _ = fn.Meta[queryModel.GroupBy]
 					if queryModel.GroupBy == "type" {
-						v = fn.Type
+						group = fn.Type
 					}
-					if v == "" {
-						v = entry.Message
+					if group == "" {
+						group = entry.Message
 					}
-					group = v
 				}
 				frame, ok := frames[group]
 				if !ok {
@@ -190,7 +215,16 @@ func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest
 					for i, c := range metaColumns {
 						field := frame.Fields[4+i]
 						field.Extend(1)
-						if v, ok := fn.Meta[c]; ok {
+						if strings.HasPrefix(c, "@device.") {
+							deviceID, err := strconv.ParseInt(fn.Meta["device_id"], 10, 64)
+							if err != nil {
+								continue
+							}
+							metaKey := strings.TrimPrefix(c, "@device.")
+							if v, ok := deviceMap[deviceID].Meta[metaKey]; ok {
+								field.Set(field.Len()-1, v)
+							}
+						} else if v, ok := fn.Meta[c]; ok {
 							field.Set(field.Len()-1, v)
 						}
 					}
