@@ -40,7 +40,7 @@ func newDatasourceInstance(settings backend.DataSourceInstanceSettings) (instanc
 	}
 	client := lynx.NewClient(&lynx.Options{
 		Authenticator: lynx.AuthApiKey{Key: dataSourceConfig.APIkey},
-		ApiBase:       dataSourceConfig.URL,
+		APIBase:       dataSourceConfig.URL,
 	})
 	return &LynxDataSourceInstance{
 		client: client,
