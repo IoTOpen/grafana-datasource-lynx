@@ -58,39 +58,7 @@ func (ds *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQueryReques
 			}
 		}
 	}
-	keys := make([]string, 0, len(frames))
-	for k := range frames {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	res := make(data.Frames, 0, len(keys))
-	for _, key := range keys {
-		frame, _ := frames[key]
-		res = append(res, frame)
-	}
-	return res, err
-}
-
-func getName(nameBy string, fn *lynx.Function) string {
-	if nameBy != "" {
-		name, ok := fn.Meta[nameBy]
-		if ok {
-			return name
-		}
-	}
-	return fn.Meta["name"]
-}
-
-func unique(fn []*lynx.Function) []*lynx.Function {
-	keys := make(map[int64]bool, len(fn))
-	list := make([]*lynx.Function, 0, len(fn))
-	for _, entry := range fn {
-		if _, ok := keys[entry.ID]; !ok {
-			keys[entry.ID] = true
-			list = append(list, entry)
-		}
-	}
-	return list
+	return createResponse(frames), nil
 }
 
 func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest) (data.Frames, error) {
@@ -110,6 +78,12 @@ func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest
 		}
 		fn = unique(append(fn, tmpFn...))
 	}
+	if queryModel.NameBy == "" {
+		queryModel.NameBy = "name"
+	}
+	if queryModel.LinkKey == "" {
+		queryModel.LinkKey = "device_id"
+	}
 	logTopicMappings := createLogTopicMappings(queryModel.ClientID, fn)
 	topicFilter := make([]string, 0, len(logTopicMappings))
 	for k := range logTopicMappings {
@@ -127,36 +101,7 @@ func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest
 		}
 		deviceMap = lynx.DeviceList(devices).MapByID()
 	}
-	metaColumnsMap := make(map[string]bool, 5)
-	metaColumns := make([]string, 0, 5)
-	if queryModel.MetaAsFields {
-		for _, f := range fn {
-			for k := range f.Meta {
-				if k != "name" && !metaColumnsMap[k] {
-					metaColumnsMap[k] = true
-					metaColumns = append(metaColumns, k)
-				}
-			}
-			if queryModel.JoinDeviceMeta {
-				deviceID, err := strconv.ParseInt(f.Meta["device_id"], 10, 64)
-				if err != nil {
-					continue
-				}
-				dev, ok := deviceMap[deviceID]
-				if !ok {
-					continue
-				}
-				for metaKey := range dev.Meta {
-					deviceKey := fmt.Sprintf("@device.%s", metaKey)
-					if metaKey != "name" && !metaColumnsMap[deviceKey] {
-						metaColumnsMap[deviceKey] = true
-						metaColumns = append(metaColumns, deviceKey)
-					}
-				}
-			}
-		}
-	}
-	sort.Strings(metaColumns)
+	metaColumns := createMetaColumns(queryModel, deviceMap, fn)
 	logResult, err := fetchLog(ds.client, queryModel, topicFilter)
 	if err != nil {
 		return nil, err
@@ -166,9 +111,6 @@ func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest
 	for _, entry := range logResult {
 		if matchingFn, ok := logTopicMappings[entry.Topic]; ok {
 			for _, fn := range matchingFn {
-				if queryModel.LinkKey == "" {
-					queryModel.LinkKey = "device_id"
-				}
 				if queryModel.MessageFrom != "" && fn.Type == queryModel.MessageFrom {
 					lastMsg[fn.Meta[queryModel.LinkKey]] = entry.Message
 					continue
@@ -232,6 +174,10 @@ func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest
 			}
 		}
 	}
+	return createResponse(frames), nil
+}
+
+func createResponse(frames map[string]*data.Frame) data.Frames {
 	keys := make([]string, 0, len(frames))
 	for k := range frames {
 		keys = append(keys, k)
@@ -242,7 +188,7 @@ func (ds *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest
 		frame, _ := frames[k]
 		res = append(res, frame)
 	}
-	return res, nil
+	return res
 }
 
 func createLogTopicMappings(clientID int64, fn []*lynx.Function) map[string][]*lynx.Function {
@@ -296,4 +242,60 @@ func fetchLog(client *lynx.Client, data *BackendQueryRequest, topicFilter []stri
 		}
 	}
 	return logResult, nil
+}
+
+func getName(nameBy string, fn *lynx.Function) string {
+	if nameBy != "" {
+		name, ok := fn.Meta[nameBy]
+		if ok {
+			return name
+		}
+	}
+	return fn.Meta["name"]
+}
+
+func unique(fn []*lynx.Function) []*lynx.Function {
+	keys := make(map[int64]bool, len(fn))
+	list := make([]*lynx.Function, 0, len(fn))
+	for _, entry := range fn {
+		if _, ok := keys[entry.ID]; !ok {
+			keys[entry.ID] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}
+
+func createMetaColumns(queryModel *BackendQueryRequest, deviceMap map[int64]*lynx.Device, fn []*lynx.Function) []string {
+	metaColumnsMap := make(map[string]bool, 5)
+	res := make([]string, 0, 5)
+	if queryModel.MetaAsFields {
+		for _, f := range fn {
+			for k := range f.Meta {
+				if k != "name" && !metaColumnsMap[k] {
+					metaColumnsMap[k] = true
+					res = append(res, k)
+				}
+			}
+			if queryModel.JoinDeviceMeta {
+				deviceID, err := strconv.ParseInt(f.Meta["device_id"], 10, 64)
+				if err != nil {
+					continue
+				}
+				dev, ok := deviceMap[deviceID]
+				if !ok {
+					continue
+				}
+				for metaKey := range dev.Meta {
+					deviceKey := fmt.Sprintf("@device.%s", metaKey)
+					if !metaColumnsMap[deviceKey] {
+						metaColumnsMap[deviceKey] = true
+						res = append(res, deviceKey)
+					}
+				}
+			}
+		}
+	}
+	sort.Strings(res)
+	return res
 }
