@@ -1,6 +1,6 @@
 {
   "name": "iotopen-iotopen-datasource",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "Fetch data from IoT Open",
   "scripts": {
     "build": "grafana-toolkit plugin:build",
