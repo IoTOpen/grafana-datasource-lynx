@@ -1,11 +1,10 @@
 package main
 
 import (
-	"os"
-
 	"github.com/IoTOpen/grafana-datasource-lynx/pkg/datasource"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
+	"os"
 )
 
 func main() {
