@@ -25,13 +25,13 @@ export const defaultQuery: Partial<MyQuery> = {
 export interface FunctionX {
   id: number;
   type: string;
-  meta: object;
+  meta: { [index: string]: string };
 }
 
 export interface DeviceX {
   id: number;
   type: string;
-  meta: object;
+  meta: { [index: string]: string };
 }
 
 export interface Installation {
