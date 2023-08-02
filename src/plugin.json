@@ -1,4 +1,5 @@
 {
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
   "name": "IoTOpen datasource",
   "id": "iotopen-datasource",
@@ -41,6 +42,9 @@
   ],
   "dependencies": {
     "grafanaVersion": "7.x.x",
-    "plugins": []
+    "plugins": [],
+    "grafanaDependency": ">=7.0.3"
   }
 }
+
+
