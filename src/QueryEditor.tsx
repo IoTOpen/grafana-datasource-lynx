@@ -18,7 +18,7 @@ interface State {
 }
 
 export class QueryEditor extends PureComponent<Props, State> {
-  constructor(props) {
+  constructor(props: any) {
     super(props);
     this.state = {
       installations: [],
@@ -73,7 +73,7 @@ export class QueryEditor extends PureComponent<Props, State> {
     onChange({ ...query, meta: query.meta });
   };
 
-  onMetaDelete = idx => {
+  onMetaDelete = (idx: number) => {
     const { onChange, query } = this.props;
     query.meta = query.meta.filter((value, fidx) => {
       return !(idx === fidx);
@@ -241,6 +241,7 @@ export class QueryEditor extends PureComponent<Props, State> {
           {query.meta.map((value, idx) => {
             return (
               <FilterEntry
+                key={idx}
                 idx={idx}
                 data={value}
                 onDelete={this.onMetaDelete}

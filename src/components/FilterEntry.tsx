@@ -15,7 +15,7 @@ interface FilterEntryProps {
 }
 
 export class FilterEntry extends PureComponent<FilterEntryProps> {
-  constructor(props) {
+  constructor(props: FilterEntryProps) {
     super(props);
   }
 
@@ -23,7 +23,7 @@ export class FilterEntry extends PureComponent<FilterEntryProps> {
     return true;
   }
 
-  onChangeKey = event => {
+  onChangeKey = (event: any) => {
     if (typeof event === typeof '') {
       this.props.onUpdate(this.props.idx, event, this.props.data.value);
     } else {
@@ -31,7 +31,7 @@ export class FilterEntry extends PureComponent<FilterEntryProps> {
     }
   };
 
-  onChangeValue = event => {
+  onChangeValue = (event: any) => {
     console.log(event);
     if (typeof event === typeof '') {
       this.props.onUpdate(this.props.idx, this.props.data.key, event);
@@ -40,7 +40,7 @@ export class FilterEntry extends PureComponent<FilterEntryProps> {
     }
   };
 
-  onDelete = event => {
+  onDelete = () => {
     this.props.onDelete(this.props.idx);
   };
 

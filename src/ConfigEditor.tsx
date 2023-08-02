@@ -42,7 +42,7 @@ export class ConfigEditor extends PureComponent<MyProps, State> {
             labelWidth={6}
             onChange={this.onURLChange}
             value={jsonData.url || ''}
-            placeholder="https://aam.iotopen.se"
+            placeholder="https://lynx.iotopen.se"
           />
         </div>
         <div className="gf-form">
