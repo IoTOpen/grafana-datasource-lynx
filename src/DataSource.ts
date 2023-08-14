@@ -28,22 +28,6 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
             .then(result => result.data as FunctionX[]);
     }
 
-    testDatasource() {
-        return new Promise((resolve, reject) => {
-            getBackendSrv()
-                .datasourceRequest({
-                    method: 'GET',
-                    url: `${this.settings.url}/api/v2/installationinfo`,
-                })
-                .then(result => {
-                    resolve({status: 'success', message: 'All good!'});
-                })
-                .catch(err => {
-                    reject({status: 'error', message: err.statusText});
-                });
-        });
-    }
-
     query(options: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
         const templateSrv = getTemplateSrv();
         const targets = options.targets.map(value => {

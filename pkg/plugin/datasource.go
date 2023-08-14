@@ -3,34 +3,38 @@ package plugin
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/IoTOpen/go-lynx"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
+	"strings"
 )
 
 type (
+	Settings struct {
+		APIKey         string `json:"apiKey"`
+		URL            string `json:"URL"`
+		OAuth2Passthru bool   `json:"oauthPassThru"`
+	}
+
 	// LynxDataSourceInstance handles plugin instances
 	LynxDataSourceInstance struct {
-		client *lynx.Client
+		client  *lynx.Client
+		options Settings
 	}
 )
 
 // NewDatasourceInstance create a new LynxDatasourceInstance
 func NewDatasourceInstance(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	dataSourceConfig := &struct {
-		APIkey string `json:"apiKey"`
-		URL    string `json:"url"`
-	}{}
-	if err := json.Unmarshal(settings.JSONData, dataSourceConfig); err != nil {
+	instance := &LynxDataSourceInstance{}
+	if err := json.Unmarshal(settings.JSONData, &instance.options); err != nil {
 		return nil, err
 	}
-	client := lynx.NewClient(&lynx.Options{
-		Authenticator: lynx.AuthApiKey{Key: dataSourceConfig.APIkey},
-		APIBase:       dataSourceConfig.URL,
+	instance.client = lynx.NewClient(&lynx.Options{
+		Authenticator: lynx.AuthApiKey{Key: instance.options.APIKey},
+		APIBase:       instance.options.URL,
 	})
-	return &LynxDataSourceInstance{
-		client: client,
-	}, nil
+	return instance, nil
 }
 
 func (instance *LynxDataSourceInstance) Dispose() {
@@ -39,8 +43,25 @@ func (instance *LynxDataSourceInstance) Dispose() {
 // QueryData handler for data queries
 func (instance *LynxDataSourceInstance) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	response := backend.NewQueryDataResponse()
+	var usedInstance = instance
+	backend.Logger.Info(fmt.Sprintf("Headedrs: %s", req.Headers))
+	backend.Logger.Info(fmt.Sprintf("HTTPHeaders: %s", req.GetHTTPHeaders()))
+	if instance.options.OAuth2Passthru {
+		headers := req.GetHTTPHeaders()
+		authHeader := headers.Get(backend.OAuthIdentityTokenHeaderName)
+		parts := strings.Fields(authHeader)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("bad auth header")
+		}
+		usedInstance = &LynxDataSourceInstance{
+			client: lynx.NewClient(&lynx.Options{
+				Authenticator: lynx.AuthApiKey{Key: parts[1]},
+				APIBase:       instance.options.URL,
+			}),
+		}
+	}
 	for _, q := range req.Queries {
-		response.Responses[q.RefID] = readQuery(instance, q)
+		response.Responses[q.RefID] = readQuery(usedInstance, q)
 	}
 	return response, nil
 }
@@ -49,9 +70,24 @@ func (instance *LynxDataSourceInstance) QueryData(ctx context.Context, req *back
 func (instance *LynxDataSourceInstance) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	res := &backend.CheckHealthResult{
 		Status:  backend.HealthStatusOk,
-		Message: "OK",
+		Message: "All good!",
 	}
-	if err := instance.client.Ping(); err != nil {
+	var usedInstance = instance
+	if instance.options.OAuth2Passthru {
+		headers := req.GetHTTPHeaders()
+		authHeader := headers.Get(backend.OAuthIdentityTokenHeaderName)
+		parts := strings.Fields(authHeader)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("bad auth header")
+		}
+		usedInstance = &LynxDataSourceInstance{
+			client: lynx.NewClient(&lynx.Options{
+				Authenticator: lynx.AuthApiKey{Key: parts[1]},
+				APIBase:       instance.options.URL,
+			}),
+		}
+	}
+	if _, err := usedInstance.client.Me(); err != nil {
 		res.Status = backend.HealthStatusError
 		res.Message = err.Error()
 	}

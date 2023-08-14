@@ -1,8 +1,8 @@
-import React, { PureComponent, ChangeEvent } from 'react';
+import React, {PureComponent, ChangeEvent, SyntheticEvent} from 'react';
 import { MyDataSourceOptions } from './types';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
 import { LegacyForms } from '@grafana/ui';
-const { FormField } = LegacyForms;
+const { FormField ,Switch} = LegacyForms;
 
 interface MyProps extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> {}
 
@@ -29,6 +29,15 @@ export class ConfigEditor extends PureComponent<MyProps, State> {
     onOptionsChange({ ...options, jsonData });
   };
 
+  setOAuthPassthru = (event: SyntheticEvent<HTMLInputElement, Event>) => {
+    const { onOptionsChange, options } = this.props;
+    const jsonData = {
+      ...options.jsonData,
+      oauthPassThru: !options.jsonData.oauthPassThru,
+    };
+    onOptionsChange({ ...options, jsonData });
+  }
+
   render() {
     const { options } = this.props;
     const { jsonData } = options;
@@ -45,7 +54,11 @@ export class ConfigEditor extends PureComponent<MyProps, State> {
             placeholder="https://lynx.iotopen.se"
           />
         </div>
-        <div className="gf-form">
+        <Switch label={"OAuth2 Passthru"}
+                checked={jsonData.oauthPassThru ?? false}
+                onChange={this.setOAuthPassthru}
+        />
+        {!jsonData.oauthPassThru && <div className="gf-form">
           <FormField
             label="API Key"
             inputWidth={24}
@@ -54,7 +67,7 @@ export class ConfigEditor extends PureComponent<MyProps, State> {
             value={jsonData.apiKey || ''}
             placeholder="Your API key"
           />
-        </div>
+        </div>}
       </div>
     );
   }
