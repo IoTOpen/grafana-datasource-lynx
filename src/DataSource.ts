@@ -1,7 +1,7 @@
-import {DataSourceInstanceSettings} from '@grafana/data';
-import {DataSourceWithBackend, getBackendSrv} from '@grafana/runtime';
+import {DataQueryRequest, DataQueryResponse, DataSourceInstanceSettings} from '@grafana/data';
+import {DataSourceWithBackend, getBackendSrv, getTemplateSrv} from '@grafana/runtime';
 import {FunctionX, Installation, MyDataSourceOptions, MyQuery} from './types';
-
+import {Observable} from 'rxjs';
 export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptions> {
     private settings: DataSourceInstanceSettings<MyDataSourceOptions>;
 
@@ -42,5 +42,20 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
                     reject({status: 'error', message: err.statusText});
                 });
         });
+    }
+
+    query(options: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
+        const templateSrv = getTemplateSrv();
+        const targets = options.targets.map(value => {
+            return {
+                ...value, meta: value.meta.map(meta => {
+                    return {
+                        key: templateSrv.replace(meta.key),
+                        value: templateSrv.replace(meta.value),
+                    }
+                })
+            }
+        });
+        return super.query({...options, targets});
     }
 }
