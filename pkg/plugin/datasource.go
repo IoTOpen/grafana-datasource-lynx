@@ -44,8 +44,6 @@ func (instance *LynxDataSourceInstance) Dispose() {
 func (instance *LynxDataSourceInstance) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	response := backend.NewQueryDataResponse()
 	var usedInstance = instance
-	backend.Logger.Info(fmt.Sprintf("Headedrs: %s", req.Headers))
-	backend.Logger.Info(fmt.Sprintf("HTTPHeaders: %s", req.GetHTTPHeaders()))
 	if instance.options.OAuth2Passthru {
 		headers := req.GetHTTPHeaders()
 		authHeader := headers.Get(backend.OAuthIdentityTokenHeaderName)
