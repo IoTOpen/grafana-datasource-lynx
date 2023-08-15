@@ -53,7 +53,7 @@ func (instance *LynxDataSourceInstance) QueryData(ctx context.Context, req *back
 		}
 		usedInstance = &LynxDataSourceInstance{
 			client: lynx.NewClient(&lynx.Options{
-				Authenticator: lynx.AuthApiKey{Key: parts[1]},
+				Authenticator: lynx.AuthBearer{Token: parts[1]},
 				APIBase:       instance.options.URL,
 			}),
 		}
@@ -80,7 +80,7 @@ func (instance *LynxDataSourceInstance) CheckHealth(ctx context.Context, req *ba
 		}
 		usedInstance = &LynxDataSourceInstance{
 			client: lynx.NewClient(&lynx.Options{
-				Authenticator: lynx.AuthApiKey{Key: parts[1]},
+				Authenticator: lynx.AuthBearer{Token: parts[1]},
 				APIBase:       instance.options.URL,
 			}),
 		}
