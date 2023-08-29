@@ -27,8 +27,6 @@ export const QueryEditor = ({onChange, query, onRunQuery, datasource}: Props) =>
 
     const [selectedInstallation, setSelectedInstallation] = useState<Installation>({id: 0, name: '', client_id: 0})
 
-    //const [ticker, setTicker] = useState<number | null>(null)
-
     const onRunQueryTimed = useBackoffCallback(onRunQuery, 250);
 
     useEffect(() => {
