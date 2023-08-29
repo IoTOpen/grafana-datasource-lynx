@@ -61,24 +61,8 @@ export const TweakSettings = ({query, onChange, onRunQuery}: TweakSettingsProps)
         onChange({...query, linkKey: event.currentTarget.value});
         onRunQuery();
     }
-
-    const onDatatable = (value: boolean) => {
-        onChange({...query, tabledata: value});
-        onRunQuery();
-    }
-
-    const onMetaAsFields = (value: boolean) => {
-        onChange({...query, metaAsFields: value});
-        onRunQuery();
-    }
-
-    const onDeviceMetaJoin = (value: boolean) => {
-        onChange({...query, joinDeviceMeta: value});
-        onRunQuery();
-    }
-
-    const onStateOnlyChange = (value: boolean) => {
-        onChange({...query, stateOnly: value});
+    const onSwitchChange = (event: FormEvent<HTMLInputElement>) => {
+        onChange({...query, [event.currentTarget.name]: event.currentTarget.checked});
         onRunQuery();
     }
 
@@ -100,7 +84,8 @@ export const TweakSettings = ({query, onChange, onRunQuery}: TweakSettingsProps)
                     tooltip={tooltipNameBy}
                 />
                 <HorizontalGroup align={"flex-start"} spacing={"xs"}>
-                    <LabeledSwitch label={"As table data"} value={query.tabledata} onChange={onDatatable}/>
+                    <LabeledSwitch label={"As table data"} value={query.tabledata} name={"tabledata"}
+                                   onChange={onSwitchChange}/>
                     {query.tabledata && <VerticalGroup spacing={"xs"} align={"flex-start"}>
                         <FormField
                             labelWidth={40}
@@ -111,12 +96,15 @@ export const TweakSettings = ({query, onChange, onRunQuery}: TweakSettingsProps)
                         />
                         <FormField labelWidth={40} label={'Linked with'} onChange={onLinkChange}
                                    value={query.linkKey}/>
-                        <LabeledSwitch label={"metaAsFields"} value={query.metaAsFields} onChange={onMetaAsFields} />
-                        {query.metaAsFields && <LabeledSwitch label={"Add device meta"} value={query.joinDeviceMeta} onChange={onDeviceMetaJoin} />}
+                        <LabeledSwitch label={"Meta as fields"} value={query.metaAsFields} name={"metaAsFields"}
+                                       onChange={onSwitchChange}/>
+                        {query.metaAsFields && <LabeledSwitch label={"Add device meta"} name={"joinDeviceMeta"}
+                                                              value={query.joinDeviceMeta} onChange={onSwitchChange}/>}
                     </VerticalGroup>
                     }
                 </HorizontalGroup>
-                <LabeledSwitch label={"Current state only"} value={query.stateOnly} onChange={onStateOnlyChange} />
+                <LabeledSwitch label={"Current state only"} value={query.stateOnly} name={"stateOnly"}
+                               onChange={onSwitchChange}/>
             </VerticalGroup>
         </>
     )
