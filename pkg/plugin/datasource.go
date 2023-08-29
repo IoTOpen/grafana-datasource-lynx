@@ -67,8 +67,7 @@ func (instance *LynxDataSourceInstance) QueryData(ctx context.Context, req *back
 // CheckHealth checks if everything is up and running properly
 func (instance *LynxDataSourceInstance) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	res := &backend.CheckHealthResult{
-		Status:  backend.HealthStatusOk,
-		Message: "All good!",
+		Status: backend.HealthStatusOk,
 	}
 	var usedInstance = instance
 	if instance.options.OAuth2Passthru {
@@ -85,9 +84,11 @@ func (instance *LynxDataSourceInstance) CheckHealth(ctx context.Context, req *ba
 			}),
 		}
 	}
-	if _, err := usedInstance.client.Me(); err != nil {
+	if me, err := usedInstance.client.Me(); err != nil {
 		res.Status = backend.HealthStatusError
 		res.Message = err.Error()
+	} else {
+		res.Message = fmt.Sprintf("Logged in as %s", me.Email)
 	}
 	return res, nil
 }
