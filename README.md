@@ -45,7 +45,7 @@ on http://localhost:3000
 
 To test oauth2 passthrou feature; 
 
-* create a new oauth2 client via the admin panel
+* create a new oauth2 client via the admin panel (Make sure the application has the `openid` scope)
 * Edit the `docker-compose.oauth2.yaml` and replace the `EDIT_ME` fields with the new credentials
 * Replace host.tld with the host for the oauth2 client
 
