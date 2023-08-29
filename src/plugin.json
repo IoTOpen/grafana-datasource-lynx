@@ -34,10 +34,12 @@
   "routes": [
     {
       "url": "{{.JsonData.url}}",
-      "headers": [{
-        "name": "X-API-Key",
-        "content": "{{.JsonData.apiKey}}"
-      }]
+      "headers": [
+        {
+          "name": "X-API-Key",
+          "content": "{{.JsonData.apiKey}}"
+        }
+      ]
     }
   ],
   "dependencies": {

@@ -1,0 +1,29 @@
+version: '3.0'
+
+services:
+  grafana:
+    container_name: 'iotopen-datasource'
+    build:
+      context: ./.config
+      args:
+        grafana_image: ${GRAFANA_IMAGE:-grafana-enterprise}
+        grafana_version: ${GRAFANA_VERSION:-9.5.3}
+    ports:
+      - 3000:3000/tcp
+    environment:
+      GF_LOG_LEVEL: "debug"
+      GF_LOG_CONSOLE_FORMAT: "json"
+      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: "EDIT_ME"
+      GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: "EDIT_ME"
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: "https://host.tld/api/v2/oauth2/token"
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: "https://host.tld/oauth2/authorize"
+      GF_AUTH_GENERIC_OAUTH_API_URL: "https://host.tld/api/v2/oauth2/userinfo"
+      GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+      GF_AUTH_GENERIC_OAUTH_SCOPES: "openid"
+      GF_AUTH_GENERIC_OAUTH_AUTH_STYLE: "InHeader"
+      GF_AUTH_GENERIC_OAUTH_NAME: "Lynx"
+      GF_AUTH_GENERIC_OAUTH_ALLOW_ASSIGN_GRAFANA_ADMIN: "true"
+      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: "'Admin'"
+    volumes:
+      - ./dist:/var/lib/grafana/plugins/iotopen-datasource
+      - ./provisioning:/etc/grafana/provisioning
