@@ -10,7 +10,7 @@
     "lint": "eslint --cache --ignore-path ./.gitignore --ext .js,.jsx,.ts,.tsx .",
     "lint:fix": "yarn run lint --fix",
     "server": "docker compose up --build",
-    "serverauth": "docker compose -f docker-compose.auth.yaml up --build",
+    "serverauth": "docker compose -f docker-compose.oauth2.yaml up --build",
     "sign": "npx --yes @grafana/sign-plugin@latest",
     "test": "jest --watch --onlyChanged",
     "test:ci": "jest --passWithNoTests --maxWorkers 4",
