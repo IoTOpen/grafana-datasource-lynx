@@ -1,8 +1,13 @@
 import {MyQuery} from "../types";
-import {LegacyForms} from "@grafana/ui";
-import React from "react";
+import {
+    LegacyForms,
+    VerticalGroup,
+    HorizontalGroup,
+} from "@grafana/ui";
+import React, {FormEvent} from "react";
+import {LabeledSwitch} from "./LabeledSwitch";
 
-const {FormField, Switch} = LegacyForms;
+const {FormField} = LegacyForms;
 
 export interface TweakSettingsProps {
     query: MyQuery;
@@ -37,49 +42,49 @@ const tooltipMessageFrom = (
 
 export const TweakSettings = ({query, onChange, onRunQuery}: TweakSettingsProps) => {
 
-    const onGroupByChange = (event: React.SyntheticEvent<HTMLInputElement>) => {
+    const onGroupByChange = (event: FormEvent<HTMLInputElement>) => {
         onChange({...query, groupBy: event.currentTarget.value});
         onRunQuery();
     }
 
-    const onNameByChange = (event: React.SyntheticEvent<HTMLInputElement>) => {
+    const onNameByChange = (event: FormEvent<HTMLInputElement>) => {
         onChange({...query, nameBy: event.currentTarget.value});
         onRunQuery();
     }
 
-    const onMessageChange = (event: React.SyntheticEvent<HTMLInputElement>) => {
+    const onMessageChange = (event: FormEvent<HTMLInputElement>) => {
         onChange({...query, messageFrom: event.currentTarget.value});
         onRunQuery();
     }
 
-    const onLinkChange = (event: React.SyntheticEvent<HTMLInputElement>) => {
+    const onLinkChange = (event: FormEvent<HTMLInputElement>) => {
         onChange({...query, linkKey: event.currentTarget.value});
         onRunQuery();
     }
 
-    const onDatatable = (event: React.SyntheticEvent<HTMLInputElement>) => {
-        onChange({...query, tabledata: event.currentTarget.checked});
+    const onDatatable = (value: boolean) => {
+        onChange({...query, tabledata: value});
         onRunQuery();
     }
 
-    const onMetaAsFields = (event: React.SyntheticEvent<HTMLInputElement>) => {
-        onChange({...query, metaAsFields: event.currentTarget.checked});
+    const onMetaAsFields = (value: boolean) => {
+        onChange({...query, metaAsFields: value});
         onRunQuery();
     }
 
-    const onDeviceMetaJoin = (event: React.SyntheticEvent<HTMLInputElement>) => {
-        onChange({...query, joinDeviceMeta: event.currentTarget.checked});
+    const onDeviceMetaJoin = (value: boolean) => {
+        onChange({...query, joinDeviceMeta: value});
         onRunQuery();
     }
 
-    const onStateOnlyChange = (event: React.SyntheticEvent<HTMLInputElement>) => {
-        onChange({...query, stateOnly: event.currentTarget.checked});
+    const onStateOnlyChange = (value: boolean) => {
+        onChange({...query, stateOnly: value});
         onRunQuery();
     }
 
     return (
         <>
-            <div className={'gf-form-inline'}>
+            <VerticalGroup spacing={"xs"}>
                 <FormField
                     labelWidth={40}
                     label={'Group by'}
@@ -94,30 +99,25 @@ export const TweakSettings = ({query, onChange, onRunQuery}: TweakSettingsProps)
                     value={query.nameBy}
                     tooltip={tooltipNameBy}
                 />
-            </div>
-            <div className={'gf-form-inline'}>
-                <Switch label={'As table data'} checked={query.tabledata} onChange={onDatatable}/>
-                <div hidden={!query.tabledata}>
-                    <FormField
-                        labelWidth={40}
-                        label={'Message from'}
-                        onChange={onMessageChange}
-                        value={query.messageFrom}
-                        tooltip={tooltipMessageFrom}
-                    />
-                    <FormField labelWidth={40} label={'Linked with'} onChange={onLinkChange}
-                               value={query.linkKey}/>
-                    <div>
-                        <Switch label={'Meta to fields'} checked={query.metaAsFields}
-                                onChange={onMetaAsFields}/>
-                        <div hidden={!query.metaAsFields}>
-                            <Switch label={'Add device meta'} checked={query.joinDeviceMeta}
-                                    onChange={onDeviceMetaJoin}/>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <Switch label={'Current state only'} checked={query.stateOnly} onChange={onStateOnlyChange}/>
+                <HorizontalGroup align={"flex-start"} spacing={"xs"}>
+                    <LabeledSwitch label={"As table data"} value={query.tabledata} onChange={onDatatable}/>
+                    {query.tabledata && <VerticalGroup spacing={"xs"} align={"flex-start"}>
+                        <FormField
+                            labelWidth={40}
+                            label={'Message from'}
+                            onChange={onMessageChange}
+                            value={query.messageFrom}
+                            tooltip={tooltipMessageFrom}
+                        />
+                        <FormField labelWidth={40} label={'Linked with'} onChange={onLinkChange}
+                                   value={query.linkKey}/>
+                        <LabeledSwitch label={"metaAsFields"} value={query.metaAsFields} onChange={onMetaAsFields} />
+                        {query.metaAsFields && <LabeledSwitch label={"Add device meta"} value={query.joinDeviceMeta} onChange={onDeviceMetaJoin} />}
+                    </VerticalGroup>
+                    }
+                </HorizontalGroup>
+                <LabeledSwitch label={"Current state only"} value={query.stateOnly} onChange={onStateOnlyChange} />
+            </VerticalGroup>
         </>
     )
 }

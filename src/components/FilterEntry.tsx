@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo} from 'react';
-import { Button, Select } from '@grafana/ui';
+import {Button, Select} from '@grafana/ui';
 import { SelectableValue } from '@grafana/data';
 import {MetaEntry} from "../types";
 
@@ -80,9 +80,7 @@ export const FilterEntry = ({data, keys, values, onUpdate, onDelete}: FilterEntr
               menuPlacement={'bottom'}
               placeholder={'wildcard match'}
           />
-          <Button variant={'destructive'} onClick={onDelete}>
-            X
-          </Button>
+          <Button variant={'destructive'} onClick={onDelete} icon={'trash-alt'} />
         </div>
       </div>
   )
