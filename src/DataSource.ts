@@ -1,6 +1,6 @@
-import {DataQueryRequest, DataQueryResponse, DataSourceInstanceSettings} from '@grafana/data';
+import {DataQueryRequest, DataQueryResponse, DataSourceInstanceSettings, MetricFindValue} from '@grafana/data';
 import {DataSourceWithBackend, getBackendSrv, getTemplateSrv} from '@grafana/runtime';
-import {FunctionX, Installation, MyDataSourceOptions, MyQuery} from './types';
+import {FunctionX, Installation, MyDataSourceOptions, MyQuery, MyVariableQuery} from './types';
 import {Observable} from 'rxjs';
 export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptions> {
     private settings: DataSourceInstanceSettings<MyDataSourceOptions>;
@@ -19,11 +19,12 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
             .then(result => result.data);
     }
 
-    fetchFunctions(installationId: number): Promise<FunctionX[]> {
+    fetchFunctions(installationId: number, meta?: {[key: string]: string}): Promise<FunctionX[]> {
+        const q = meta ? Object.keys(meta).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(meta[key])}`).join('&') : '';
         return getBackendSrv()
             .datasourceRequest({
                 method: 'GET',
-                url: `${this.settings.url}/api/v2/functionx/${installationId}`,
+                url: `${this.settings.url}/api/v2/functionx/${installationId}?${q}`,
             })
             .then(result => result.data as FunctionX[]);
     }
@@ -41,5 +42,9 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
             }
         });
         return super.query({...options, targets});
+    }
+
+    metricFindQuery(query: MyVariableQuery, options?: any): Promise<MetricFindValue[]> {
+        return Promise.resolve([]);
     }
 }

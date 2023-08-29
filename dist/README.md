@@ -41,4 +41,14 @@ Make sure to run the script in the git root directory.
 Default username password is ```admin```:```helloworld``` and server is running
 on http://localhost:3000
 
+### OAuth2 passthru development
 
+To test oauth2 passthrou feature; 
+
+* create a new oauth2 client via the admin panel (Make sure the application has the `openid` scope)
+* Edit the `docker-compose.oauth2.yaml` and replace the `EDIT_ME` fields with the new credentials
+* Replace host.tld with the host for the oauth2 client
+
+Run `docker compose -f docker-compose.oauth2.yaml up --build` or `npm run serverauth`
+
+* Add datasource and tick the OAuth2 passthru checkbox
