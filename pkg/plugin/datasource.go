@@ -30,6 +30,9 @@ func NewDatasourceInstance(settings backend.DataSourceInstanceSettings) (instanc
 	if err := json.Unmarshal(settings.JSONData, &instance.options); err != nil {
 		return nil, err
 	}
+	if settings.DecryptedSecureJSONData["apiKey"] != "" {
+		instance.options.APIKey = settings.DecryptedSecureJSONData["apiKey"]
+	}
 	instance.client = lynx.NewClient(&lynx.Options{
 		Authenticator: lynx.AuthApiKey{Key: instance.options.APIKey},
 		APIBase:       instance.options.URL,

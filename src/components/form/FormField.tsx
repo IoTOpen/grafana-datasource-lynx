@@ -1,5 +1,5 @@
 import React, {FormEventHandler, ReactElement} from 'react';
-import {InlineLabel, Input} from "@grafana/ui";
+import {InlineField, Input} from "@grafana/ui";
 
 export interface FormFieldProps {
     label: string;
@@ -8,16 +8,15 @@ export interface FormFieldProps {
     name: string;
     onChange: FormEventHandler<HTMLInputElement>;
     tooltip?: ReactElement;
-    labelWidth: number | "auto";
+    labelWidth?: number | "auto";
+    width?: number;
+    type?: string;
 }
 
-export const FormField = ({tooltip, label, placeholder, name, value, onChange, labelWidth = 'auto'}: FormFieldProps) => {
+export const FormField = ({type, tooltip, label, placeholder, name, value, onChange, labelWidth = 'auto', width}: FormFieldProps) => {
     return(
-        <>
-            <InlineLabel tooltip={tooltip} width={labelWidth}>
-                {label}
-            </InlineLabel>
-            <Input name={name} placeholder={placeholder} value={value} onChange={onChange} />
-        </>
+        <InlineField label={label} labelWidth={labelWidth} tooltip={tooltip} grow={true}>
+            <Input type={type} name={name} placeholder={placeholder} value={value} onChange={onChange}  width={width}/>
+        </InlineField>
     )
 }
