@@ -1,13 +1,11 @@
 import {MyQuery} from "../types";
 import {
-    LegacyForms,
     VerticalGroup,
     HorizontalGroup,
 } from "@grafana/ui";
 import React, {FormEvent} from "react";
-import {LabeledSwitch} from "./LabeledSwitch";
-
-const {FormField} = LegacyForms;
+import {LabeledSwitch} from "./form/LabeledSwitch";
+import {FormField} from "./form/FormField";
 
 export interface TweakSettingsProps {
     query: MyQuery;
@@ -70,35 +68,41 @@ export const TweakSettings = ({query, onChange, onRunQuery}: TweakSettingsProps)
         <>
             <VerticalGroup spacing={"xs"}>
                 <FormField
-                    labelWidth={40}
+                    name={'groupBy'}
+                    labelWidth={15}
                     label={'Group by'}
                     onChange={onGroupByChange}
                     value={query.groupBy}
+                    placeholder={'Function ID'}
                     tooltip={tooltipGroupBy}
                 />
                 <FormField
-                    labelWidth={40}
+                    name={'nameBy'}
+                    labelWidth={15}
                     label={'Name by'}
+                    placeholder={'name'}
                     onChange={onNameByChange}
                     value={query.nameBy}
                     tooltip={tooltipNameBy}
                 />
                 <HorizontalGroup align={"flex-start"} spacing={"xs"}>
                     <LabeledSwitch label={"As table data"} value={query.tabledata} name={"tabledata"}
-                                   onChange={onSwitchChange}/>
+                                   onChange={onSwitchChange} labelWidth={15}/>
                     {query.tabledata && <VerticalGroup spacing={"xs"} align={"flex-start"}>
                         <FormField
-                            labelWidth={40}
+                            placeholder={'eg. latitude'}
+                            name={'messageFrom'}
+                            labelWidth={20}
                             label={'Message from'}
                             onChange={onMessageChange}
                             value={query.messageFrom}
                             tooltip={tooltipMessageFrom}
                         />
-                        <FormField labelWidth={40} label={'Linked with'} onChange={onLinkChange}
+                        <FormField labelWidth={20} placeholder={'device_id'} name={'linkKey'} label={'Linked with'} onChange={onLinkChange}
                                    value={query.linkKey}/>
-                        <LabeledSwitch label={"Meta as fields"} value={query.metaAsFields} name={"metaAsFields"}
+                        <LabeledSwitch label={"Meta as fields"} labelWidth={20} value={query.metaAsFields} name={"metaAsFields"}
                                        onChange={onSwitchChange}/>
-                        {query.metaAsFields && <LabeledSwitch label={"Add device meta"} name={"joinDeviceMeta"}
+                        {query.metaAsFields && <LabeledSwitch label={"Add device meta"} labelWidth={20} name={"joinDeviceMeta"}
                                                               value={query.joinDeviceMeta} onChange={onSwitchChange}/>}
                     </VerticalGroup>
                     }

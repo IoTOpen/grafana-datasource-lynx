@@ -48,7 +48,7 @@ export const MetaEditor = ({entries: ents, onUpdate, hints}: MetaEditorProps) =>
                 })}
             </div>
             <div className={'gf-form-inline'} style={{paddingBottom: 10}}>
-                <Button onClick={onMetaAdd}>Add filter</Button>
+                <Button onClick={onMetaAdd} icon={'plus'}>Add filter</Button>
             </div>
         </>
     )
