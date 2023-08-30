@@ -37,7 +37,7 @@
       "headers": [
         {
           "name": "X-API-Key",
-          "content": "{{.JsonData.apiKey}}"
+          "content": "{{.SecureJsonData.apiKey}}"
         }
       ]
     }
