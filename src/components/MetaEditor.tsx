@@ -1,13 +1,13 @@
 import {MetaEntry} from "../types";
 import {FilterEntry} from "./FilterEntry";
 import React, {useCallback} from "react";
-import {Button} from "@grafana/ui";
+import {Button, VerticalGroup} from "@grafana/ui";
 
 
 export interface MetaEditorProps {
     entries: MetaEntry[];
     onUpdate(entries: MetaEntry[]): void;
-    hints: {[key: string]: string[]};
+    hints?: {[key: string]: string[]};
 }
 
 export const MetaEditor = ({entries: ents, onUpdate, hints}: MetaEditorProps) => {
@@ -32,7 +32,7 @@ export const MetaEditor = ({entries: ents, onUpdate, hints}: MetaEditorProps) =>
     }, [ents, onUpdate]);
 
     return (
-        <>
+        <VerticalGroup>
             <div className={'gf-form-inline,ui-list'}>
                 {ents.map((value, idx) => {
                     return (
@@ -41,8 +41,8 @@ export const MetaEditor = ({entries: ents, onUpdate, hints}: MetaEditorProps) =>
                             data={value}
                             onDelete={() => onMetaDelete(idx)}
                             onUpdate={(value) => onMetaUpdate(idx, value)}
-                            keys={Object.keys(hints)}
-                            values={hints[value.key] ?? []}
+                            keys={hints ? Object.keys(hints):[]}
+                            values={hints ? hints[value.key] ?? []:[]}
                         />
                     );
                 })}
@@ -50,6 +50,6 @@ export const MetaEditor = ({entries: ents, onUpdate, hints}: MetaEditorProps) =>
             <div className={'gf-form-inline'} style={{paddingBottom: 10}}>
                 <Button onClick={onMetaAdd} icon={'plus'}>Add filter</Button>
             </div>
-        </>
+        </VerticalGroup>
     )
 };

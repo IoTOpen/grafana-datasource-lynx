@@ -1,12 +1,15 @@
 import {DataQuery, DataSourceJsonData} from '@grafana/data';
 
-export interface MyVariableQuery {
-
-}
 
 export interface MetaEntry {
     key: string;
     value: string;
+}
+
+export interface MyVariableQuery {
+    installationId: number;
+    meta: MetaEntry[];
+    metaKey: string;
 }
 
 export interface MyQuery extends DataQuery {
