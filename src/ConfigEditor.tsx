@@ -1,74 +1,93 @@
-import React, {PureComponent, ChangeEvent, SyntheticEvent} from 'react';
-import { MyDataSourceOptions } from './types';
-import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
-import { LegacyForms } from '@grafana/ui';
-const { FormField ,Switch} = LegacyForms;
+import React, {ChangeEvent, SyntheticEvent, useEffect} from 'react';
+import {MyDataSourceOptions, MySecureJsonData} from './types';
+import {DataSourcePluginOptionsEditorProps} from '@grafana/data';
+import {Alert, HorizontalGroup, VerticalGroup} from '@grafana/ui';
+import {FormField} from 'components/form/FormField'
+import {LabeledSwitch} from "./components/form/LabeledSwitch";
 
-interface MyProps extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> {}
+interface ConfigEditorProps extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions, MySecureJsonData> {
+}
 
-interface State {}
+export const ConfigEditor = ({onOptionsChange, options}: ConfigEditorProps) => {
+    const {jsonData, secureJsonData, secureJsonFields} = options;
+    const [migrated, setMigrated] = React.useState(false);
+    const onChangeText = (event: ChangeEvent<HTMLInputElement>) => {
+        onOptionsChange({
+            ...options,
+            jsonData: {
+                ...jsonData,
+                [event.target.name]: event.target.value
+            }
+        });
+    }
 
-export class ConfigEditor extends PureComponent<MyProps, State> {
-  componentDidMount() {}
+    const onChangeSwitch = (event: SyntheticEvent<HTMLInputElement, Event>) => {
+        onOptionsChange({
+            ...options,
+            jsonData: {
+                ...jsonData,
+                [event.currentTarget.name]: event.currentTarget.checked
+            }
+        });
+    }
 
-  onAPIKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { onOptionsChange, options } = this.props;
-    const jsonData = {
-      ...options.jsonData,
-      apiKey: event.target.value,
-    };
-    onOptionsChange({ ...options, jsonData });
-  };
+    const onChangeSecretText = (event: ChangeEvent<HTMLInputElement>) => {
+        onOptionsChange({
+            ...options,
+            secureJsonData: {
+                ...secureJsonData,
+                [event.target.name]: event.target.value
+            }
+        });
+    }
 
-  onURLChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { onOptionsChange, options } = this.props;
-    const jsonData = {
-      ...options.jsonData,
-      url: event.target.value,
-    };
-    onOptionsChange({ ...options, jsonData });
-  };
-
-  setOAuthPassthru = (event: SyntheticEvent<HTMLInputElement, Event>) => {
-    const { onOptionsChange, options } = this.props;
-    const jsonData = {
-      ...options.jsonData,
-      oauthPassThru: !options.jsonData.oauthPassThru,
-    };
-    onOptionsChange({ ...options, jsonData });
-  }
-
-  render() {
-    const { options } = this.props;
-    const { jsonData } = options;
+    useEffect(() => {
+        if (options.jsonData.apiKey !== undefined && options.jsonData.apiKey !== '') {
+            setMigrated(true);
+            let newJsonData = {...jsonData};
+            delete newJsonData.apiKey;
+            onOptionsChange({
+                ...options,
+                secureJsonData: {...secureJsonData, apiKey: options.jsonData.apiKey},
+                jsonData: newJsonData
+            });
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
-      <div className="gf-form-group">
-        <div className="gf-form">
-          <FormField
-            label="URL"
-            inputWidth={24}
-            labelWidth={6}
-            onChange={this.onURLChange}
-            value={jsonData.url || ''}
-            placeholder="https://lynx.iotopen.se"
-          />
-        </div>
-        <Switch label={"OAuth2 Passthru"}
-                checked={jsonData.oauthPassThru ?? false}
-                onChange={this.setOAuthPassthru}
-        />
-        {!jsonData.oauthPassThru && <div className="gf-form">
-          <FormField
-            label="API Key"
-            inputWidth={24}
-            labelWidth={6}
-            onChange={this.onAPIKeyChange}
-            value={jsonData.apiKey || ''}
-            placeholder="Your API key"
-          />
-        </div>}
-      </div>
-    );
-  }
+        <VerticalGroup spacing={"none"}>
+            <FormField label={"URL"}
+                       value={options.jsonData.url || ''}
+                       name={"url"}
+                       placeholder={"https://lynx.iotopen.se"}
+                       onChange={onChangeText}
+                       labelWidth={15}
+                       width={40}
+            />
+            <LabeledSwitch labelWidth={15} label={"OAuth2 Passthru"} name={"oauthPassThru"}
+                           value={options.jsonData.oauthPassThru || false} onChange={onChangeSwitch}/>
+            {!options.jsonData.oauthPassThru &&
+                <FormField label={"API Key"}
+                           labelWidth={15}
+                           name={"apiKey"}
+                           value={secureJsonData?.apiKey ?? ''}
+                           onChange={onChangeSecretText}
+                           placeholder={secureJsonFields.apiKey ? 'Configured' : 'Enter API Key'}
+                           width={70}
+                           type={"password"}
+                />
+            }
+            {migrated && !secureJsonFields.apiKey &&
+                <HorizontalGroup width={"100%"}>
+                    <Alert title={"Secure the API Key"} severity={"error"}>
+                        <VerticalGroup>
+                            <p>
+                                The API key has migrated to a secure location. <br/>
+                                Please press save to migrate the key to the secure store and get rid of this message.
+                            </p>
+                        </VerticalGroup>
+                    </Alert>
+                </HorizontalGroup>}
+        </VerticalGroup>
+    )
 }

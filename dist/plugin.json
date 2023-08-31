@@ -29,7 +29,7 @@
     ],
     "screenshots": [],
     "version": "2.2.2",
-    "updated": "2023-08-15"
+    "updated": "2023-08-30"
   },
   "routes": [
     {
@@ -37,7 +37,7 @@
       "headers": [
         {
           "name": "X-API-Key",
-          "content": "{{.JsonData.apiKey}}"
+          "content": "{{.SecureJsonData.apiKey}}"
         }
       ]
     }

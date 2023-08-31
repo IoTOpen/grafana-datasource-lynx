@@ -1,7 +1,8 @@
-import {DataQueryRequest, DataQueryResponse, DataSourceInstanceSettings} from '@grafana/data';
+import {DataQueryRequest, DataQueryResponse, DataSourceInstanceSettings, MetricFindValue} from '@grafana/data';
 import {DataSourceWithBackend, getBackendSrv, getTemplateSrv} from '@grafana/runtime';
-import {FunctionX, Installation, MyDataSourceOptions, MyQuery} from './types';
+import {FunctionX, Installation, MyDataSourceOptions, MyQuery, MyVariableQuery} from './types';
 import {Observable} from 'rxjs';
+
 export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptions> {
     private settings: DataSourceInstanceSettings<MyDataSourceOptions>;
 
@@ -19,11 +20,12 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
             .then(result => result.data);
     }
 
-    fetchFunctions(installationId: number): Promise<FunctionX[]> {
+    fetchFunctions(installationId: number, meta?: { [key: string]: string }): Promise<FunctionX[]> {
+        const q = meta ? Object.keys(meta).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(meta[key])}`).join('&') : '';
         return getBackendSrv()
             .datasourceRequest({
                 method: 'GET',
-                url: `${this.settings.url}/api/v2/functionx/${installationId}`,
+                url: `${this.settings.url}/api/v2/functionx/${installationId}?${q}`,
             })
             .then(result => result.data as FunctionX[]);
     }
@@ -41,5 +43,28 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
             }
         });
         return super.query({...options, targets});
+    }
+
+    metricFindQuery(query: MyVariableQuery, options?: any): Promise<MetricFindValue[]> {
+        if (query.metaKey === '' || query.installationId === 0) {
+            return Promise.resolve([]);
+        }
+        const filter = query.meta ? query.meta.reduce<{ [key: string]: string }>((acc, meta) => {
+            if (meta.key !== '' && meta.value !== '') {
+                acc[meta.key] = meta.value;
+            }
+            return acc;
+        }, {}) : {};
+
+        return this.fetchFunctions(query.installationId, filter).then(functions => {
+            return functions.reduce<MetricFindValue[]>((acc, func) => {
+                if (!acc.find(f => f.text === func.meta[query.metaKey]) && func.meta[query.metaKey]) {
+                    return [...acc, {text: func.meta[query.metaKey], value: func.meta[query.metaKey]}];
+                }
+                return acc;
+            }, []);
+        }).then(result => {
+            return result;
+        })
     }
 }
