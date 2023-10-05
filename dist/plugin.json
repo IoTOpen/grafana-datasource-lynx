@@ -29,7 +29,7 @@
     ],
     "screenshots": [],
     "version": "2.2.2",
-    "updated": "2023-08-30"
+    "updated": "2023-10-05"
   },
   "routes": [
     {
@@ -43,9 +43,9 @@
     }
   ],
   "dependencies": {
-    "grafanaVersion": "7.x.x",
+    "grafanaVersion": "7.5.x",
     "plugins": [],
-    "grafanaDependency": ">=7.0.3"
+    "grafanaDependency": ">=7.5.6"
   }
 }
 
