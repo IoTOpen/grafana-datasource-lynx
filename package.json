@@ -1,6 +1,6 @@
 {
   "name": "iotopen-iotopen-datasource",
-  "version": "2.2.2",
+  "version": "3.0.0",
   "description": "Fetch data from IoT Open",
   "scripts": {
     "build": "webpack -c ./.config/webpack/webpack.config.ts --env production",
