@@ -41,6 +41,13 @@ Make sure to run the script in the git root directory.
 Default username password is ```admin```:```helloworld``` and server is running
 on http://localhost:3000
 
+
+### Name series after device meta
+
+You can name grafana series after device meta by prefixing the `Name by` field with `@device.` and appending the meta key.
+
+`@device.name` would name the series after the device name instead of the function name.
+
 ### OAuth2 passthru development
 
 To test oauth2 passthrou feature; 

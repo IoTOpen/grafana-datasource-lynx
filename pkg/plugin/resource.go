@@ -20,6 +20,14 @@ func (instance *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQuery
 	if err != nil {
 		return nil, err
 	}
+	deviceMap := make(map[int64]*lynx.Device)
+	if strings.HasPrefix(queryModel.NameBy, "@device.") {
+		devices, err := instance.client.GetDevices(queryModel.InstallationID, map[string]string{})
+		if err != nil {
+			return nil, err
+		}
+		deviceMap = devices.MapByID()
+	}
 	logTopicMappings := createLogTopicMappings(queryModel.ClientID, functions)
 	topicFilter := make([]string, 0, len(logTopicMappings))
 	for k := range logTopicMappings {
@@ -35,7 +43,7 @@ func (instance *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQuery
 			for _, fn := range functions {
 				group := strconv.FormatInt(fn.ID, 10)
 				if queryModel.GroupBy != "" {
-					v, _ := fn.Meta[queryModel.GroupBy]
+					v := fn.Meta[queryModel.GroupBy]
 					if queryModel.GroupBy == "type" {
 						v = fn.Type
 					}
@@ -44,13 +52,20 @@ func (instance *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQuery
 					}
 				}
 				frame, ok := frames[group]
+				var dev *lynx.Device = nil
+				if strings.HasPrefix(queryModel.NameBy, "@device.") {
+					deviceID, err := strconv.ParseInt(fn.Meta["device_id"], 10, 64)
+					if err == nil {
+						dev = deviceMap[deviceID]
+					}
+				}
 				if !ok {
 					frame = data.NewFrame("",
 						data.NewField("Time", nil, []time.Time{}),
 						data.NewField("Value", nil, []float64{}))
 					frames[group] = frame
 				}
-				frame.Name = getName(queryModel.NameBy, fn)
+				frame.Name = getName(queryModel.NameBy, fn, dev)
 				sec, dec := math.Modf(entry.Timestamp)
 				ts := time.Unix(int64(sec), int64(dec*(1e9)))
 				frame.Fields[0].Append(ts)
@@ -90,16 +105,16 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 		topicFilter = append(topicFilter, k)
 	}
 	if len(topicFilter) == 0 {
-		return nil, fmt.Errorf("Empty topicfilter")
+		return nil, fmt.Errorf("empty topicfilter")
 	}
 
 	deviceMap := make(map[int64]*lynx.Device)
-	if queryModel.JoinDeviceMeta {
+	if queryModel.JoinDeviceMeta || strings.HasPrefix(queryModel.NameBy, "@device.") {
 		devices, err := instance.client.GetDevices(queryModel.InstallationID, map[string]string{})
 		if err != nil {
 			return nil, err
 		}
-		deviceMap = lynx.DeviceList(devices).MapByID()
+		deviceMap = devices.MapByID()
 	}
 	metaColumns := createMetaColumns(queryModel, deviceMap, fn)
 	logResult, err := fetchLog(instance.client, queryModel, topicFilter)
@@ -123,7 +138,7 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 				}
 				group := strconv.FormatInt(fn.ID, 10)
 				if queryModel.GroupBy != "" {
-					group, _ = fn.Meta[queryModel.GroupBy]
+					group = fn.Meta[queryModel.GroupBy]
 					if queryModel.GroupBy == "type" {
 						group = fn.Type
 					}
@@ -132,6 +147,11 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 					}
 				}
 				frame, ok := frames[group]
+				deviceID, devIDError := strconv.ParseInt(fn.Meta["device_id"], 10, 64)
+				var dev *lynx.Device
+				if devIDError == nil {
+					dev = deviceMap[deviceID]
+				}
 				if !ok {
 					frame = data.NewFrame("",
 						data.NewField("Time", nil, []time.Time{}),
@@ -146,11 +166,11 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 					}
 					frames[group] = frame
 				}
-				frame.Name = getName(queryModel.NameBy, fn)
+				frame.Name = getName(queryModel.NameBy, fn, dev)
 				sec, dec := math.Modf(entry.Timestamp)
 				ts := time.Unix(int64(sec), int64(dec*(1e9)))
 				frame.Fields[0].Append(ts)
-				frame.Fields[1].Append(getName(queryModel.NameBy, fn))
+				frame.Fields[1].Append(getName(queryModel.NameBy, fn, dev))
 				frame.Fields[2].Append(entry.Value)
 				frame.Fields[3].Append(entry.Message)
 				if queryModel.MetaAsFields {
@@ -158,8 +178,7 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 						field := frame.Fields[4+i]
 						field.Extend(1)
 						if strings.HasPrefix(c, "@device.") {
-							deviceID, err := strconv.ParseInt(fn.Meta["device_id"], 10, 64)
-							if err != nil {
+							if devIDError != nil {
 								continue
 							}
 							metaKey := strings.TrimPrefix(c, "@device.")
@@ -185,7 +204,7 @@ func createResponse(frames map[string]*data.Frame) data.Frames {
 	sort.Strings(keys)
 	res := make(data.Frames, 0, len(keys))
 	for _, k := range keys {
-		frame, _ := frames[k]
+		frame := frames[k]
 		res = append(res, frame)
 	}
 	return res
@@ -206,11 +225,11 @@ func createLogTopicMappings(clientID int64, fn []*lynx.Function) map[string][]*l
 	return logTopicMappings
 }
 
-func fetchLog(client *lynx.Client, data *BackendQueryRequest, topicFilter []string) ([]lynx.LogEntry, error) {
+func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []string) ([]lynx.LogEntry, error) {
 	var logResult []lynx.LogEntry
 	var offset int
-	if data.StateOnly {
-		status, err := client.Status(data.InstallationID, topicFilter)
+	if request.StateOnly {
+		status, err := client.Status(request.InstallationID, topicFilter)
 		if err != nil {
 			return nil, err
 		}
@@ -219,12 +238,12 @@ func fetchLog(client *lynx.Client, data *BackendQueryRequest, topicFilter []stri
 			logResult = append(logResult, *entry)
 		}
 	} else {
-		sec, dec := math.Modf(data.From)
+		sec, dec := math.Modf(request.From)
 		from := time.Unix(int64(sec), int64(dec*(1e9)))
-		sec, dec = math.Modf(data.To)
+		sec, dec = math.Modf(request.To)
 		to := time.Unix(int64(sec), int64(dec*(1e9)))
 		for {
-			log, err := client.V3().Log(data.InstallationID, &lynx.LogOptionsV3{
+			log, err := client.V3().Log(request.InstallationID, &lynx.LogOptionsV3{
 				TopicFilter: topicFilter,
 				From:        from,
 				To:          to,
@@ -244,7 +263,13 @@ func fetchLog(client *lynx.Client, data *BackendQueryRequest, topicFilter []stri
 	return logResult, nil
 }
 
-func getName(nameBy string, fn *lynx.Function) string {
+func getName(nameBy string, fn *lynx.Function, dev *lynx.Device) string {
+	if strings.HasPrefix(nameBy, "@device.") && dev != nil {
+		metaKey := strings.TrimPrefix(nameBy, "@device.")
+		if v, ok := dev.Meta[metaKey]; ok {
+			return v
+		}
+	}
 	if nameBy != "" {
 		name, ok := fn.Meta[nameBy]
 		if ok {
