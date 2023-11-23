@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo} from 'react';
+import React, {MouseEventHandler, useCallback, useMemo} from 'react';
 import {Button, Select} from '@grafana/ui';
 import { SelectableValue } from '@grafana/data';
 import {MetaEntry} from "../types";
@@ -53,6 +53,11 @@ export const FilterEntry = ({data, keys, values, onUpdate, onDelete}: FilterEntr
     onUpdate({...data, value: newValue})
   }, [data, onUpdate]);
 
+  const deleteEventHandler = useCallback<MouseEventHandler<HTMLButtonElement>>((event) => {
+    event.preventDefault();
+    onDelete();
+  }, [onDelete]);
+
   return (
       <div className={'gf-form-inline'}>
         <div className={'gf-form'}>
@@ -80,7 +85,7 @@ export const FilterEntry = ({data, keys, values, onUpdate, onDelete}: FilterEntr
               menuPlacement={'bottom'}
               placeholder={'wildcard match'}
           />
-          <Button variant={'destructive'} onClick={onDelete} icon={'trash-alt'} />
+          <Button variant={'destructive'} onClick={deleteEventHandler} icon={'trash-alt'} />
         </div>
       </div>
   )

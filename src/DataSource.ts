@@ -2,6 +2,7 @@ import {DataQueryRequest, DataQueryResponse, DataSourceInstanceSettings, MetricF
 import {DataSourceWithBackend, getBackendSrv, getTemplateSrv} from '@grafana/runtime';
 import {FunctionX, Installation, MyDataSourceOptions, MyQuery, MyVariableQuery} from './types';
 import {Observable} from 'rxjs';
+import {toNumber} from "lodash";
 
 export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptions> {
     private settings: DataSourceInstanceSettings<MyDataSourceOptions>;
@@ -31,21 +32,28 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
     }
 
     query(options: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
+        console.log('query', options);
         const templateSrv = getTemplateSrv();
+        //const varMap = templateSrv.getVariables().reduce((acc, x) => {
+        //    acc[x.name] = templateSrv.replace(`\${${x.name}}`);
+        //    return acc
+        //}, {} as { [key: string]: string});
         const targets = options.targets.map(value => {
             return {
-                ...value, meta: value.meta.map(meta => {
+                //...value, installationId: value.installationVariable ? toNumber(varMap[value.installationVariable]) : value.installationId,
+                ...value, installationId: value.installationVariable ? toNumber(templateSrv.replace(value.installationVariable)) : value.installationId,
+                meta: value.meta.map(meta => {
                     return {
                         key: templateSrv.replace(meta.key),
                         value: templateSrv.replace(meta.value),
                     }
-                })
+                }, value)
             }
         });
         return super.query({...options, targets});
     }
 
-    metricFindQuery(query: MyVariableQuery, options?: any): Promise<MetricFindValue[]> {
+    findMetaQuery(query: MyVariableQuery, options?: any): Promise<MetricFindValue[]> {
         if (query.metaKey === '' || query.installationId === 0) {
             return Promise.resolve([]);
         }
@@ -66,5 +74,22 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
         }).then(result => {
             return result;
         })
+    }
+
+    metricFindQuery(query: MyVariableQuery, options?: any): Promise<MetricFindValue[]> {
+        const qt = query.queryMode ? query.queryMode : 'functionMeta';
+        switch (qt) {
+            case 'installation':
+                return this.fetchInstallations().then(installations => {
+                    return installations.reduce<MetricFindValue[]>((acc, installation) => {
+                        return [...acc, {text: installation.name, value: installation.id}];
+                    }, []);
+                });
+            case 'functionMeta':
+                return this.findMetaQuery(query, options);
+            default:
+                return this.findMetaQuery(query, options);
+
+        }
     }
 }

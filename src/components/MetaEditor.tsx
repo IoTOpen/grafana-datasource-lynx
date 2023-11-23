@@ -1,6 +1,6 @@
 import {MetaEntry} from "../types";
 import {FilterEntry} from "./FilterEntry";
-import React, {useCallback} from "react";
+import React, {MouseEvent, useCallback} from "react";
 import {Button, VerticalGroup} from "@grafana/ui";
 
 
@@ -17,8 +17,9 @@ export const MetaEditor = ({entries: ents, onUpdate, hints}: MetaEditorProps) =>
         onUpdate(tmp);
     }, [ents, onUpdate]);
 
-    const onMetaAdd = useCallback(() => {
+    const onMetaAdd = useCallback((e: MouseEvent) => {
         onUpdate([...ents, {key: '', value: ''}]);
+        e.preventDefault();
     }, [ents, onUpdate]);
 
     const onMetaUpdate = useCallback((idx: number, value: MetaEntry) => {
@@ -39,7 +40,7 @@ export const MetaEditor = ({entries: ents, onUpdate, hints}: MetaEditorProps) =>
                         <FilterEntry
                             key={idx}
                             data={value}
-                            onDelete={() => onMetaDelete(idx)}
+                            onDelete={() => {onMetaDelete(idx)}}
                             onUpdate={(value) => onMetaUpdate(idx, value)}
                             keys={hints ? Object.keys(hints):[]}
                             values={hints ? hints[value.key] ?? []:[]}

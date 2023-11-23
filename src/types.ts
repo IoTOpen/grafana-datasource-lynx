@@ -7,6 +7,7 @@ export interface MetaEntry {
 }
 
 export interface MyVariableQuery {
+    queryMode: string;
     installationId: number;
     meta: MetaEntry[];
     metaKey: string;
@@ -15,6 +16,7 @@ export interface MyVariableQuery {
 export interface MyQuery extends DataQuery {
     installationId: number;
     clientId: number;
+    installationVariable?: string;
     type: string;
     meta: MetaEntry[];
     tabledata: boolean;
