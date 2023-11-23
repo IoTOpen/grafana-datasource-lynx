@@ -2,6 +2,7 @@ import {DataQueryRequest, DataQueryResponse, DataSourceInstanceSettings, MetricF
 import {DataSourceWithBackend, getBackendSrv, getTemplateSrv} from '@grafana/runtime';
 import {FunctionX, Installation, MyDataSourceOptions, MyQuery, MyVariableQuery} from './types';
 import {Observable} from 'rxjs';
+import {toNumber} from "lodash";
 
 export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptions> {
     private settings: DataSourceInstanceSettings<MyDataSourceOptions>;
@@ -34,20 +35,29 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
         const templateSrv = getTemplateSrv();
         const targets = options.targets.map(value => {
             return {
-                ...value, meta: value.meta.map(meta => {
+                ...value, installationId: value.installationVariable ? toNumber(templateSrv.replace(value.installationVariable)) : value.installationId,
+                meta: value.meta.map(meta => {
                     return {
                         key: templateSrv.replace(meta.key),
                         value: templateSrv.replace(meta.value),
                     }
-                })
+                }, value)
             }
         });
         return super.query({...options, targets});
     }
 
-    metricFindQuery(query: MyVariableQuery, options?: any): Promise<MetricFindValue[]> {
-        if (query.metaKey === '' || query.installationId === 0) {
+    findMetaQuery(query: MyVariableQuery, options?: any): Promise<MetricFindValue[]> {
+        if (query.metaKey === '' || query.installationId === '0' || query.installationId === '') {
             return Promise.resolve([]);
+        }
+        let id = toNumber(query.installationId);
+        if (typeof query.installationId === 'string' && query.installationId.includes('$')) {
+            const tmp = getTemplateSrv().replace(query.installationId);
+            id = toNumber(tmp);
+        }
+        if (isNaN(id)) {
+            return Promise.reject(`Invalid installation id: ${query.installationId} => ${id}`);
         }
         const filter = query.meta ? query.meta.reduce<{ [key: string]: string }>((acc, meta) => {
             if (meta.key !== '' && meta.value !== '') {
@@ -56,7 +66,7 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
             return acc;
         }, {}) : {};
 
-        return this.fetchFunctions(query.installationId, filter).then(functions => {
+        return this.fetchFunctions(id, filter).then(functions => {
             return functions.reduce<MetricFindValue[]>((acc, func) => {
                 if (!acc.find(f => f.text === func.meta[query.metaKey]) && func.meta[query.metaKey]) {
                     return [...acc, {text: func.meta[query.metaKey], value: func.meta[query.metaKey]}];
@@ -66,5 +76,22 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
         }).then(result => {
             return result;
         })
+    }
+
+    metricFindQuery(query: MyVariableQuery, options?: any): Promise<MetricFindValue[]> {
+        const qt = query.queryMode ? query.queryMode : 'functionMeta';
+        switch (qt) {
+            case 'installation':
+                return this.fetchInstallations().then(installations => {
+                    return installations.reduce<MetricFindValue[]>((acc, installation) => {
+                        return [...acc, {text: installation.name, value: installation.id}];
+                    }, []);
+                });
+            case 'functionMeta':
+                return this.findMetaQuery(query, options);
+            default:
+                return this.findMetaQuery(query, options);
+
+        }
     }
 }

@@ -10,19 +10,23 @@ export interface InstallationSelectorProps {
     installations: Installation[];
     installation: Installation;
     onSelection(installation: Installation): void;
-
 }
 
-export const InstallationSelector = ({isLoading, installations, installation, onSelection}: InstallationSelectorProps) => {
+export const InstallationSelector = ({
+                                         isLoading,
+                                         installations,
+                                         installation,
+                                         onSelection
+                                     }: InstallationSelectorProps) => {
     const installationOptions = useMemo<Array<SelectValue<Installation>>>(() => {
-       return installations.map((installation) => {
-              return {label: installation.name, value: installation};
-       });
+        return installations.map((installation) => {
+            return {label: installation.name, value: installation};
+        });
     }, [installations]);
 
     const currentSelectedInstallation = useMemo<SelectValue<Installation>>(() => {
-        return {label: installation.name ,value: installation};
-    },[installation]);
+        return {label: installation.name, value: installation};
+    }, [installation]);
 
     const onChange = (event: SelectableValue<Installation>) => {
         onSelection(event.value ?? installations[0]);
@@ -31,7 +35,7 @@ export const InstallationSelector = ({isLoading, installations, installation, on
     const filter = useCallback((option: SelectableValue<Installation>, rawInput: string) => {
         const input = rawInput.toLowerCase();
         return option.value?.name?.toLowerCase().includes(input) ?? false;
-    },[]);
+    }, []);
 
     return (
         <div className={'gf-form-inline'}>

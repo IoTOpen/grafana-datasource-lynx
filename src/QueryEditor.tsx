@@ -6,6 +6,9 @@ import {InstallationSelector} from "./components/InstallationSelector";
 import {MetaEditor} from "./components/MetaEditor";
 import {TweakSettings} from "./components/TweakSettings";
 import {useBackoffCallback} from "./components/useBackoffCallback";
+import {LabeledSwitch} from "./components/form/LabeledSwitch";
+import {InlineFieldRow} from "@grafana/ui";
+import {VariableSelector} from "./components/VariableSelector";
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
@@ -93,12 +96,28 @@ export const QueryEditor = ({onChange, query, onRunQuery, datasource}: Props) =>
         return res;
     }, [functions]);
 
+    const setInstallationVariable = (variable?: string) => {
+        onChange({...squery, installationVariable: variable});
+    };
+
     return (
         <div className={'section gf-form-group'}>
-            <InstallationSelector isLoading={loadingInstallations || loadingFunctions}
-                                  installations={installations}
-                                  installation={selectedInstallation}
-                                  onSelection={setSelectedInstallation}/>
+            <InlineFieldRow>
+                {squery.installationVariable === undefined ?
+                    <InstallationSelector isLoading={loadingInstallations || loadingFunctions}
+                                          installations={installations}
+                                          installation={selectedInstallation}
+                                          onSelection={setSelectedInstallation}/> :
+                    <VariableSelector value={squery.installationVariable} onSelection={setInstallationVariable}/>}
+                <LabeledSwitch label={"From variable"} name={"useVariable"}
+                               value={squery.installationVariable !== undefined} onChange={(e) => {
+                    if (e.currentTarget.checked) {
+                        setInstallationVariable('');
+                    } else {
+                        setInstallationVariable(undefined);
+                    }
+                }}/>
+            </InlineFieldRow>
             <MetaEditor entries={squery.meta || []}
                         onUpdate={onUpdateMeta}
                         hints={hints}
