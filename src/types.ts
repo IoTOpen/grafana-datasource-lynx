@@ -8,7 +8,7 @@ export interface MetaEntry {
 
 export interface MyVariableQuery {
     queryMode: string;
-    installationId: number;
+    installationId: string | number;
     meta: MetaEntry[];
     metaKey: string;
 }

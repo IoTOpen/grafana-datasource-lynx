@@ -19,18 +19,10 @@ export const VariableEditor = ({query, onChange}: MyVariableEditorProps) => {
 
     const q = useMemo(() => {
         if (query.queryMode === undefined || query.queryMode === '') {
-            return {...query, queryMode: 'meta', installationId: 0, meta: [], metaKey: ''};
+            return {...query, queryMode: 'meta', installationId: '0', meta: [], metaKey: ''};
         }
         return query;
     }, [query]);
-    const onChangeNumber = (event: ChangeEvent<HTMLInputElement>) => {
-        const x = parseInt(event.target.value, 10);
-        if (isNaN(x)) {
-            onChange({...q, [event.target.name]: 0});
-        } else {
-            onChange({...q, [event.target.name]: x});
-        }
-    }
 
     const updateMeta = (meta: MetaEntry[]) => {
         onChange({...q, meta: meta});
@@ -60,9 +52,9 @@ export const VariableEditor = ({query, onChange}: MyVariableEditorProps) => {
                 <VerticalGroup>
                     <HorizontalGroup>
                         <FormField label={"Installation ID"} placeholder={"ID"}
-                                   value={q.installationId?.toString() ?? 0}
+                                   value={q.installationId === undefined ? '0' : q.installationId.toString()}
                                    name={"installationId"}
-                                   onChange={onChangeNumber} labelWidth={15}/>
+                                   onChange={onChangeText} labelWidth={15}/>
                         <FormField label={"Meta key"} placeholder={"name"} labelWidth={15} value={query.metaKey ?? ''}
                                    name={"metaKey"}
                                    onChange={onChangeText}/>

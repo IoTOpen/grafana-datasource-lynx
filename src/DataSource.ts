@@ -54,8 +54,16 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
     }
 
     findMetaQuery(query: MyVariableQuery, options?: any): Promise<MetricFindValue[]> {
-        if (query.metaKey === '' || query.installationId === 0) {
+        if (query.metaKey === '' || query.installationId === '0' || query.installationId === '') {
             return Promise.resolve([]);
+        }
+        let id = toNumber(query.installationId);
+        if (typeof query.installationId === 'string' && query.installationId.includes('$')) {
+            const tmp = getTemplateSrv().replace(query.installationId);
+            id = toNumber(tmp);
+        }
+        if (isNaN(id)) {
+            return Promise.reject(`Invalid installation id: ${query.installationId} => ${id}`);
         }
         const filter = query.meta ? query.meta.reduce<{ [key: string]: string }>((acc, meta) => {
             if (meta.key !== '' && meta.value !== '') {
@@ -64,7 +72,7 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
             return acc;
         }, {}) : {};
 
-        return this.fetchFunctions(query.installationId, filter).then(functions => {
+        return this.fetchFunctions(id, filter).then(functions => {
             return functions.reduce<MetricFindValue[]>((acc, func) => {
                 if (!acc.find(f => f.text === func.meta[query.metaKey]) && func.meta[query.metaKey]) {
                     return [...acc, {text: func.meta[query.metaKey], value: func.meta[query.metaKey]}];
