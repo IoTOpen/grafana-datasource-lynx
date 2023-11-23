@@ -32,7 +32,6 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
     }
 
     query(options: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
-        console.log('query', options);
         const templateSrv = getTemplateSrv();
         const targets = options.targets.map(value => {
             return {
