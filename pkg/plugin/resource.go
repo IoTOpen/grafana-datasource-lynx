@@ -28,7 +28,7 @@ func (instance *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQuery
 		}
 		deviceMap = devices.MapByID()
 	}
-	logTopicMappings := createLogTopicMappings(queryModel.ClientID, functions)
+	logTopicMappings := createLogTopicMappings(functions)
 	topicFilter := make([]string, 0, len(logTopicMappings))
 	for k := range logTopicMappings {
 		topicFilter = append(topicFilter, k)
@@ -99,7 +99,7 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 	if queryModel.LinkKey == "" {
 		queryModel.LinkKey = "device_id"
 	}
-	logTopicMappings := createLogTopicMappings(queryModel.ClientID, fn)
+	logTopicMappings := createLogTopicMappings(fn)
 	topicFilter := make([]string, 0, len(logTopicMappings))
 	for k := range logTopicMappings {
 		topicFilter = append(topicFilter, k)
@@ -210,16 +210,15 @@ func createResponse(frames map[string]*data.Frame) data.Frames {
 	return res
 }
 
-func createLogTopicMappings(clientID int64, fn []*lynx.Function) map[string][]*lynx.Function {
+func createLogTopicMappings(fn []*lynx.Function) map[string][]*lynx.Function {
 	logTopicMappings := make(map[string][]*lynx.Function, len(fn))
-	for _, f := range fn {
+	for i, f := range fn {
 		v, ok := f.Meta["topic_read"]
 		if ok {
-			topicRead := fmt.Sprintf("%d/%s", clientID, v)
-			if _, ok := logTopicMappings[topicRead]; !ok {
-				logTopicMappings[topicRead] = make([]*lynx.Function, 0)
+			if _, ok := logTopicMappings[v]; !ok {
+				logTopicMappings[v] = make([]*lynx.Function, 0, 2)
 			}
-			logTopicMappings[topicRead] = append(logTopicMappings[topicRead], f)
+			logTopicMappings[v] = append(logTopicMappings[v], fn[i])
 		}
 	}
 	return logTopicMappings
@@ -234,7 +233,10 @@ func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []s
 			return nil, err
 		}
 		for _, entry := range status {
-			entry.Topic = fmt.Sprintf("%d/%s", entry.ClientID, entry.Topic)
+			t := strings.SplitN(entry.Topic, "/", 2)
+			if len(t) == 2 {
+				entry.Topic = t[1]
+			}
 			logResult = append(logResult, *entry)
 		}
 	} else {
@@ -243,7 +245,7 @@ func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []s
 		sec, dec = math.Modf(request.To)
 		to := time.Unix(int64(sec), int64(dec*(1e9)))
 		for {
-			log, err := client.V3().Log(request.InstallationID, &lynx.LogOptionsV3{
+			logQuery, err := client.V3().Log(request.InstallationID, &lynx.LogOptionsV3{
 				TopicFilter: topicFilter,
 				From:        from,
 				To:          to,
@@ -253,9 +255,15 @@ func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []s
 			if err != nil {
 				return nil, err
 			}
-			logResult = append(logResult, log.Data...)
-			offset += log.Count
-			if offset >= int(log.Total) {
+			for _, x := range logQuery.Data {
+				t := strings.SplitN(x.Topic, "/", 2)
+				if len(t) == 2 {
+					x.Topic = t[1]
+				}
+				logResult = append(logResult, x)
+			}
+			offset += logQuery.Count
+			if offset >= int(logQuery.Total) {
 				break
 			}
 		}
