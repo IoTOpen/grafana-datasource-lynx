@@ -233,10 +233,6 @@ func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []s
 			return nil, err
 		}
 		for _, entry := range status {
-			t := strings.SplitN(entry.Topic, "/", 2)
-			if len(t) == 2 {
-				entry.Topic = t[1]
-			}
 			logResult = append(logResult, *entry)
 		}
 	} else {
