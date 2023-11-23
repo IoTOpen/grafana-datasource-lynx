@@ -34,13 +34,8 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
     query(options: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
         console.log('query', options);
         const templateSrv = getTemplateSrv();
-        //const varMap = templateSrv.getVariables().reduce((acc, x) => {
-        //    acc[x.name] = templateSrv.replace(`\${${x.name}}`);
-        //    return acc
-        //}, {} as { [key: string]: string});
         const targets = options.targets.map(value => {
             return {
-                //...value, installationId: value.installationVariable ? toNumber(varMap[value.installationVariable]) : value.installationId,
                 ...value, installationId: value.installationVariable ? toNumber(templateSrv.replace(value.installationVariable)) : value.installationId,
                 meta: value.meta.map(meta => {
                     return {
