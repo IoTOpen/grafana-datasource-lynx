@@ -15,7 +15,6 @@ export interface MyVariableQuery {
 
 export interface MyQuery extends DataQuery {
     installationId: number;
-    clientId: number;
     installationVariable?: string;
     type: string;
     meta: MetaEntry[];
@@ -32,7 +31,6 @@ export interface MyQuery extends DataQuery {
 
 export const defaultQuery: Partial<MyQuery> = {
     installationId: 0,
-    clientId: 0,
     type: '',
     meta: [{key: 'type', value: ''}],
 };

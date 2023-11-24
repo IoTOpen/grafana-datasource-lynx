@@ -68,9 +68,8 @@ export const QueryEditor = ({onChange, query, onRunQuery, datasource}: Props) =>
 
     useEffect(() => {
         if (selectedInstallation.id !== 0 &&
-            selectedInstallation.id !== squery.installationId &&
-            selectedInstallation.client_id !== squery.clientId) {
-            onChange({...squery, installationId: selectedInstallation.id, clientId: selectedInstallation.client_id});
+            selectedInstallation.id !== squery.installationId) {
+            onChange({...squery, installationId: selectedInstallation.id});
         }
     }, [selectedInstallation, squery, onChange])
 

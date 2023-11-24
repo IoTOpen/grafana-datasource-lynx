@@ -4,7 +4,6 @@ package plugin
 type BackendQueryRequest struct {
 	RefID          string `json:"refId"`
 	InstallationID int64  `json:"installationId"`
-	ClientID       int64  `json:"clientId"`
 	Meta           []struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
