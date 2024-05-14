@@ -61,9 +61,10 @@ func (instance *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQuery
 					}
 				}
 				if !ok {
+					labels := createLabels(dev, fn)
 					frame = data.NewFrame("",
-						data.NewField("Time", nil, []time.Time{}),
-						data.NewField("Value", nil, []float64{}))
+						data.NewField("Time", labels, []time.Time{}),
+						data.NewField("Value", labels, []float64{}))
 					frames[group] = frame
 				}
 				frame.Name = getName(queryModel.NameBy, fn, dev)
@@ -75,6 +76,19 @@ func (instance *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQuery
 		}
 	}
 	return createResponse(frames), nil
+}
+
+func createLabels(device *lynx.Device, fn *lynx.Function) data.Labels {
+	res := data.Labels{}
+	if device != nil {
+		for k, v := range device.Meta {
+			res[fmt.Sprintf("@device.%s", k)] = v
+		}
+	}
+	for k, v := range fn.Meta {
+		res[k] = v
+	}
+	return res
 }
 
 func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryRequest) (data.Frames, error) {
@@ -154,15 +168,16 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 					dev = deviceMap[deviceID]
 				}
 				if !ok {
+					labels := createLabels(dev, fn)
 					frame = data.NewFrame("",
-						data.NewField("Time", nil, []time.Time{}),
-						data.NewField(queryModel.NameBy, nil, []string{}),
-						data.NewField("Value", nil, []float64{}),
-						data.NewField("Message", nil, []string{}))
+						data.NewField("Time", labels, []time.Time{}),
+						data.NewField(queryModel.NameBy, labels, []string{}),
+						data.NewField("Value", labels, []float64{}),
+						data.NewField("Message", labels, []string{}))
 					if queryModel.MetaAsFields {
 						for _, column := range metaColumns {
 							frame.Fields = append(frame.Fields,
-								data.NewField(column, nil, []string{}))
+								data.NewField(column, labels, []string{}))
 						}
 					}
 					frames[group] = frame
