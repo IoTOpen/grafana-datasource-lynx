@@ -59,7 +59,7 @@ export const ConfigEditor = ({onOptionsChange, options}: ConfigEditorProps) => {
             <FormField label={"URL"}
                        value={options.jsonData.url || ''}
                        name={"url"}
-                       placeholder={"Enter URL, ex. https://lynx.iotopen.se"}
+                       placeholder={"Enter URL, eg. https://lynx.iotopen.se"}
                        onChange={onChangeText}
                        labelWidth={15}
                        width={40}
