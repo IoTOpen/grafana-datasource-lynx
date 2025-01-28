@@ -25,7 +25,7 @@ type (
 )
 
 // NewDatasourceInstance create a new LynxDatasourceInstance
-func NewDatasourceInstance(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+func NewDatasourceInstance(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	instance := &LynxDataSourceInstance{}
 	if err := json.Unmarshal(settings.JSONData, &instance.options); err != nil {
 		return nil, err
