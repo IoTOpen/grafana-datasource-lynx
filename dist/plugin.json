@@ -31,32 +31,7 @@
         "version": "3.1.0",
         "updated": "2025-01-29"
     },
-<<<<<<< HEAD
     "routes": [
-=======
-    "keywords": [
-      "iot",
-      "datasource"
-    ],
-    "logos": {
-      "small": "img/logo.png",
-      "large": "img/logo.png"
-    },
-    "links": [
-      {
-        "name": "Website",
-        "url": "https://iotopen.se"
-      }
-    ],
-    "screenshots": [],
-    "version": "3.1.0",
-    "updated": "2024-05-14"
-  },
-  "routes": [
-    {
-      "url": "{{.JsonData.url}}",
-      "headers": [
->>>>>>> 52b270d (dist)
         {
             "url": "{{.JsonData.url}}",
             "headers": [

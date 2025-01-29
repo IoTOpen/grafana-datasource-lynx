@@ -1,5 +1,9 @@
 ba5ee903d3b81740a1bd1c9aacf631a04ab8a209838d03a649365cf66590fdc7:Magefile.go
 4b56518da7faffd1d21cd49eab7df5234a7bb556063345c265d773008e29c89c:pkg/main.go
 0a0cf9cfc1d26f02cdf3bc7d685a733c6f00118640ba14d7d790339f838651db:pkg/plugin/datasource.go
+<<<<<<< HEAD
 d09d64fdfc09b3dfd6dfa3112a9cfe37f18bf3c082aa1d50e6c7a17378bf2f25:pkg/plugin/resource.go
+=======
+4b5fa676cc4aa67e80332de55ca79ff7b2906a78607cddd0922ab4dd5ec80db4:pkg/plugin/resource.go
+>>>>>>> b6229b0 (dist)
 c5a42f8ad87e499e7e7e8013aef5646e5a9016d011e76291ced44aa750ba7e4c:pkg/plugin/types.go
