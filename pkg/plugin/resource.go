@@ -2,13 +2,14 @@ package plugin
 
 import (
 	"fmt"
-	"github.com/IoTOpen/go-lynx"
-	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"math"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/IoTOpen/go-lynx"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
 func (instance *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQueryRequest) (data.Frames, error) {
@@ -182,8 +183,14 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 								continue
 							}
 							metaKey := strings.TrimPrefix(c, "@device.")
-							if v, ok := deviceMap[deviceID].Meta[metaKey]; ok {
-								field.Set(field.Len()-1, v)
+							if v, ok := deviceMap[deviceID]; ok {
+								if v, ok := v.Meta[metaKey]; ok {
+									field.Set(field.Len()-1, v)
+								} else {
+									field.Set(field.Len()-1, "")
+								}
+							} else {
+								return nil, fmt.Errorf("device %d not found for function %d linked", deviceID, fn.ID)
 							}
 						} else if v, ok := fn.Meta[c]; ok {
 							field.Set(field.Len()-1, v)
