@@ -1,0 +1,12 @@
+apiVersion: 1
+
+datasources:
+  - name: 'IoTOpen datasource'
+    type: 'iotopen-datasource'
+    access: proxy
+    isDefault: true
+    orgId: 1
+    version: 1
+    editable: true
+    jsonData:
+      url: "https://lynx.iotopen.se"
