@@ -11,6 +11,8 @@ export interface MyVariableQuery {
     installationId: string | number;
     meta: MetaEntry[];
     metaKey: string;
+    metaNameKey: string;
+    addDeviceMeta: boolean;
 }
 
 export interface MyQuery extends DataQuery {
@@ -36,16 +38,19 @@ export const defaultQuery: Partial<MyQuery> = {
     meta: [{key: 'type', value: ''}],
 };
 
+
+export type Meta = { [index: string]: string };
+
 export interface FunctionX {
     id: number;
     type: string;
-    meta: { [index: string]: string };
+    meta: Meta;
 }
 
 export interface DeviceX {
     id: number;
     type: string;
-    meta: { [index: string]: string };
+    meta: Meta;
 }
 
 export interface Installation {

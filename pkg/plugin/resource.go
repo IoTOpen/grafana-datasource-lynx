@@ -91,6 +91,7 @@ func createLabels(qm *BackendQueryRequest, device *lynx.Device, fn *lynx.Functio
 	for k, v := range fn.Meta {
 		res[k] = v
 	}
+	res["installation_id"] = strconv.FormatInt(fn.InstallationID, 10)
 	return res
 }
 
