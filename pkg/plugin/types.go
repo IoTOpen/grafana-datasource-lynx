@@ -19,4 +19,5 @@ type BackendQueryRequest struct {
 	NameBy         string  `json:"nameBy"`
 	From           float64 `json:"from"`
 	To             float64 `json:"to"`
+	MetaAsLabels   bool    `json:"metaAsLabels"`
 }

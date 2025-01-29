@@ -63,13 +63,17 @@ export const TweakSettings = ({query, onChange, onRunQuery}: TweakSettingsProps)
         onChange({...query, [event.currentTarget.name]: event.currentTarget.checked});
         onRunQuery();
     }
+    const onMetaAsLabelsChange= (event: FormEvent<HTMLInputElement>) => {
+        onChange({...query, [event.currentTarget.name]: event.currentTarget.checked});
+        onRunQuery();
+    }
 
     return (
         <>
             <VerticalGroup spacing={"xs"}>
                 <FormField
                     name={'groupBy'}
-                    labelWidth={15}
+                    labelWidth={16}
                     label={'Group by'}
                     onChange={onGroupByChange}
                     value={query.groupBy}
@@ -78,7 +82,7 @@ export const TweakSettings = ({query, onChange, onRunQuery}: TweakSettingsProps)
                 />
                 <FormField
                     name={'nameBy'}
-                    labelWidth={15}
+                    labelWidth={16}
                     label={'Name by'}
                     placeholder={'name'}
                     onChange={onNameByChange}
@@ -87,7 +91,7 @@ export const TweakSettings = ({query, onChange, onRunQuery}: TweakSettingsProps)
                 />
                 <HorizontalGroup align={"flex-start"} spacing={"xs"}>
                     <LabeledSwitch label={"As table data"} value={query.tabledata} name={"tabledata"}
-                                   onChange={onSwitchChange} labelWidth={15}/>
+                                   onChange={onSwitchChange} labelWidth={16}/>
                     {query.tabledata && <VerticalGroup spacing={"xs"} align={"flex-start"}>
                         <FormField
                             placeholder={'eg. latitude'}
@@ -108,7 +112,9 @@ export const TweakSettings = ({query, onChange, onRunQuery}: TweakSettingsProps)
                     }
                 </HorizontalGroup>
                 <LabeledSwitch label={"Current state only"} value={query.stateOnly} name={"stateOnly"}
-                               onChange={onSwitchChange}/>
+                               onChange={onSwitchChange} labelWidth={16}/>
+                <LabeledSwitch label={"Meta as labels"} name={"metaAsLabels"} value={query.metaAsLabels}
+                               onChange={onMetaAsLabelsChange} labelWidth={16}/>
             </VerticalGroup>
         </>
     )

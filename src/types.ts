@@ -26,6 +26,7 @@ export interface MyQuery extends DataQuery {
     messageFrom: string;
     groupBy: string;
     nameBy: string;
+    metaAsLabels: boolean;
 }
 
 

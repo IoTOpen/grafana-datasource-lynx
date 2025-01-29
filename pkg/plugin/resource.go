@@ -61,7 +61,7 @@ func (instance *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQuery
 					}
 				}
 				if !ok {
-					labels := createLabels(dev, fn)
+					labels := createLabels(queryModel, dev, fn)
 					frame = data.NewFrame("",
 						data.NewField("Time", labels, []time.Time{}),
 						data.NewField("Value", labels, []float64{}))
@@ -78,7 +78,10 @@ func (instance *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQuery
 	return createResponse(frames), nil
 }
 
-func createLabels(device *lynx.Device, fn *lynx.Function) data.Labels {
+func createLabels(qm *BackendQueryRequest, device *lynx.Device, fn *lynx.Function) data.Labels {
+	if !qm.MetaAsLabels {
+		return nil
+	}
 	res := data.Labels{}
 	if device != nil {
 		for k, v := range device.Meta {
@@ -168,7 +171,7 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 					dev = deviceMap[deviceID]
 				}
 				if !ok {
-					labels := createLabels(dev, fn)
+					labels := createLabels(queryModel, dev, fn)
 					frame = data.NewFrame("",
 						data.NewField("Time", labels, []time.Time{}),
 						data.NewField(queryModel.NameBy, labels, []string{}),
