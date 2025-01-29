@@ -1,52 +1,51 @@
 {
-  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
-  "type": "datasource",
-  "name": "IoTOpen datasource",
-  "id": "iotopen-datasource",
-  "backend": true,
-  "executable": "lynx_datasource_backend",
-  "alerting": true,
-  "metrics": true,
-  "info": {
-    "description": "Fetch data from IoT Open",
-    "author": {
-      "name": "IoTOpen",
-      "url": "https://iotopen.se"
+    "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
+    "type": "datasource",
+    "name": "IoTOpen datasource",
+    "id": "iotopen-datasource",
+    "backend": true,
+    "executable": "lynx_datasource_backend",
+    "alerting": true,
+    "metrics": true,
+    "info": {
+        "description": "Fetch data from IoT Open",
+        "author": {
+            "name": "IoTOpen",
+            "url": "https://iotopen.se"
+        },
+        "keywords": [
+            "iot",
+            "datasource"
+        ],
+        "logos": {
+            "small": "img/logo.png",
+            "large": "img/logo.png"
+        },
+        "links": [
+            {
+                "name": "Website",
+                "url": "https://iotopen.se"
+            }
+        ],
+        "screenshots": [],
+        "version": "3.1.0",
+        "updated": "2025-01-28"
     },
-    "keywords": [
-      "iot",
-      "datasource"
-    ],
-    "logos": {
-      "small": "img/logo.png",
-      "large": "img/logo.png"
-    },
-    "links": [
-      {
-        "name": "Website",
-        "url": "https://iotopen.se"
-      }
-    ],
-    "screenshots": [],
-    "version": "3.1.0",
-    "updated": "2024-10-21"
-  },
-  "routes": [
-    {
-      "url": "{{.JsonData.url}}",
-      "headers": [
+    "routes": [
         {
-          "name": "X-API-Key",
-          "content": "{{.SecureJsonData.apiKey}}"
+            "url": "{{.JsonData.url}}",
+            "headers": [
+                {
+                    "name": "X-API-Key",
+                    "content": "{{.SecureJsonData.apiKey}}"
+                }
+            ]
         }
-      ]
-    }
-  ],
-  "dependencies": {
-    "grafanaVersion": "7.5.x",
-    "plugins": [],
-    "grafanaDependency": ">=7.5.6"
-  }
+    ],
+    "dependencies": {
+        "grafanaVersion": "7.5.x",
+        "plugins": [],
+        "grafanaDependency": ">=7.5.6"
+    },
+    "buildMode": "production"
 }
-
-
