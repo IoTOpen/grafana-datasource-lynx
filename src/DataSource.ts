@@ -90,7 +90,6 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
         }, {}) : {};
         if(query.addDeviceMeta) {
             return this.fetchDevices(id).then(devices => {
-                console.log(devices);
                 const deviceMap: {[key: string]: DeviceX} = devices.reduce<{ [key: string]: DeviceX }>((acc, device) => {
                     acc[`${device.id}`] = device;
                     return acc;
