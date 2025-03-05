@@ -2,8 +2,10 @@ module github.com/IoTOpen/grafana-datasource-lynx
 
 go 1.24
 
+toolchain go1.24.0
+
 require (
-	github.com/IoTOpen/go-lynx v0.0.0-20241003102708-281266f91b8d
+	github.com/IoTOpen/go-lynx v0.0.0-20250305144349-71584fd6ebfc
 	github.com/grafana/grafana-plugin-sdk-go v0.263.0
 )
 
