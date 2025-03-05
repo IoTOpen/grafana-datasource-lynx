@@ -267,12 +267,19 @@ func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []s
 		sec, dec = math.Modf(request.To)
 		to := time.Unix(int64(sec), int64(dec*(1e9)))
 		for {
+			var interval time.Duration
+			if request.AggrInterval != 0 {
+				interval = request.AggrInterval
+			}
+
 			logQuery, err := client.V3().Log(request.InstallationID, &lynx.LogOptionsV3{
-				TopicFilter: topicFilter,
-				From:        from,
-				To:          to,
-				Offset:      int64(offset),
-				Order:       lynx.LogOrderAsc,
+				TopicFilter:  topicFilter,
+				From:         from,
+				To:           to,
+				Offset:       int64(offset),
+				Order:        lynx.LogOrderAsc,
+				AggrMethod:   request.AggrMethod,
+				AggrInterval: interval,
 			})
 			if err != nil {
 				return nil, err
