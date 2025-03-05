@@ -267,7 +267,6 @@ func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []s
 		sec, dec = math.Modf(request.To)
 		to := time.Unix(int64(sec), int64(dec*(1e9)))
 		for {
-			// Parse interval string to duration if present
 			var interval time.Duration
 			if request.AggrInterval != 0 {
 				interval = request.AggrInterval
@@ -279,8 +278,8 @@ func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []s
 				To:           to,
 				Offset:       int64(offset),
 				Order:        lynx.LogOrderAsc,
-				AggrMethod:   request.AggrMethod, // Pass aggregation method
-				AggrInterval: interval,           // Pass interval in nanoseconds
+				AggrMethod:   request.AggrMethod,
+				AggrInterval: interval,
 			})
 			if err != nil {
 				return nil, err
