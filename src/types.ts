@@ -1,4 +1,4 @@
-import {DataQuery, DataSourceJsonData} from '@grafana/data';
+import { DataQuery, DataSourceJsonData } from '@grafana/data';
 
 
 export interface MetaEntry {
@@ -29,13 +29,15 @@ export interface MyQuery extends DataQuery {
     groupBy: string;
     nameBy: string;
     metaAsLabels: boolean;
+    aggrMethod?: string;
+    aggrInterval?: string;
 }
 
 
 export const defaultQuery: Partial<MyQuery> = {
     installationId: 0,
     type: '',
-    meta: [{key: 'type', value: ''}],
+    meta: [{ key: 'type', value: '' }],
 };
 
 
