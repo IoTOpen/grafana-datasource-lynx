@@ -1,6 +1,7 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/toml v1.4.0 h1:kuoIxZQy2WRRk1pttg9asf+WVv6tWQuBNVmK8+nqPr0=
 github.com/BurntSushi/toml v1.4.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
+github.com/IoTOpen/go-lynx v0.0.0-20241003102708-281266f91b8d/go.mod h1:PYHbcgMRDYVf5HrwVYFnh5IeoaDc4byv7PhVymUMLg8=
 github.com/andybalholm/brotli v1.1.1 h1:PR2pgnyFznKEugtsUo0xLdDop5SKXd5Qf5ysW+7XdTA=
 github.com/andybalholm/brotli v1.1.1/go.mod h1:05ib4cKhjx3OQYUY22hTVd34Bc8upXjOLL2rKwwZBoA=
 github.com/apache/arrow-go/v18 v18.0.1-0.20241212180703-82be143d7c30 h1:hXVi7QKuCQ0E8Yujfu9b0f0RnzZ72efpWvPnZgnJPrE=
