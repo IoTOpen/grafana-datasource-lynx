@@ -268,10 +268,14 @@ func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []s
 		to := time.Unix(int64(sec), int64(dec*(1e9)))
 		for {
 			var interval time.Duration
-			if request.AggrInterval != 0 {
-				interval = request.AggrInterval
-			}
 
+			if request.AggrInterval != "" {
+				var err error
+				interval, err = time.ParseDuration(request.AggrInterval)
+				if err != nil {
+					return nil, fmt.Errorf("invalid aggrInterval: %s", err)
+				}
+			}
 			logQuery, err := client.V3().Log(request.InstallationID, &lynx.LogOptionsV3{
 				TopicFilter:  topicFilter,
 				From:         from,
