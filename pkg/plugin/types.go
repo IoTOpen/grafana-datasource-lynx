@@ -20,4 +20,6 @@ type BackendQueryRequest struct {
 	From           float64 `json:"from"`
 	To             float64 `json:"to"`
 	MetaAsLabels   bool    `json:"metaAsLabels"`
+	AggrMethod     string  `json:"aggrMethod"`
+	AggrInterval   string  `json:"aggrInterval"`
 }
