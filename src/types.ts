@@ -69,6 +69,7 @@ export interface MyDataSourceOptions extends DataSourceJsonData {
     apiKey?: string;
     oauthPassThru?: boolean;
     auth?: string;
+    timeout?: string;
 }
 
 export interface MySecureJsonData {

@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/IoTOpen/go-lynx"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -16,11 +18,13 @@ type (
 		APIKey         string `json:"apiKey"`
 		URL            string `json:"URL"`
 		OAuth2Passthru bool   `json:"oauthPassThru"`
+		Timeout        string `json:"timeout"`
 	}
 
 	// LynxDataSourceInstance handles plugin instances
 	LynxDataSourceInstance struct {
 		client  *lynx.Client
+		Timeout time.Duration
 		options Settings
 	}
 )
@@ -34,9 +38,22 @@ func NewDatasourceInstance(ctx context.Context, settings backend.DataSourceInsta
 	if settings.DecryptedSecureJSONData["apiKey"] != "" {
 		instance.options.APIKey = settings.DecryptedSecureJSONData["apiKey"]
 	}
+
+	timeout := time.Second * 5
+	if instance.options.Timeout != "" {
+		if t, err := time.ParseDuration(instance.options.Timeout); err == nil {
+			timeout = t
+		} else {
+			return nil, err
+		}
+	}
+	instance.Timeout = timeout
 	instance.client = lynx.NewClient(&lynx.Options{
 		Authenticator: lynx.AuthApiKey{Key: instance.options.APIKey},
 		APIBase:       instance.options.URL,
+		HTTPClient: &http.Client{
+			Timeout: timeout,
+		},
 	})
 	return instance, nil
 }
@@ -59,6 +76,9 @@ func (instance *LynxDataSourceInstance) QueryData(ctx context.Context, req *back
 			client: lynx.NewClient(&lynx.Options{
 				Authenticator: lynx.AuthBearer{Token: parts[1]},
 				APIBase:       instance.options.URL,
+				HTTPClient: &http.Client{
+					Timeout: instance.Timeout,
+				},
 			}),
 		}
 	}
@@ -85,6 +105,9 @@ func (instance *LynxDataSourceInstance) CheckHealth(ctx context.Context, req *ba
 			client: lynx.NewClient(&lynx.Options{
 				Authenticator: lynx.AuthBearer{Token: parts[1]},
 				APIBase:       instance.options.URL,
+				HTTPClient: &http.Client{
+					Timeout: instance.Timeout,
+				},
 			}),
 		}
 	}

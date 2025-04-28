@@ -56,16 +56,26 @@ export const ConfigEditor = ({onOptionsChange, options}: ConfigEditorProps) => {
 
     return (
         <VerticalGroup spacing={"none"}>
-            <FormField label={"URL"}
-                       value={options.jsonData.url || ''}
-                       name={"url"}
-                       placeholder={"Enter URL, eg. https://lynx.iotopen.se"}
+            <HorizontalGroup>
+                <FormField label={"URL"}
+                           value={options.jsonData.url || ''}
+                           name={"url"}
+                           placeholder={"Enter URL, eg. https://lynx.iotopen.se"}
+                           onChange={onChangeText}
+                           labelWidth={15}
+                           width={40}
+                />
+                <LabeledSwitch labelWidth={15} label={"OAuth2 Passthru"} name={"oauthPassThru"}
+                               value={options.jsonData.oauthPassThru || false} onChange={onChangeSwitch}/>
+            </HorizontalGroup>
+            <FormField label={"Timeout"}
+                       value={options.jsonData.timeout || '5s'}
+                       name={"timeout"}
+                       placeholder={"HTTP Header timeout"}
                        onChange={onChangeText}
                        labelWidth={15}
-                       width={40}
+                       width={8}
             />
-            <LabeledSwitch labelWidth={15} label={"OAuth2 Passthru"} name={"oauthPassThru"}
-                           value={options.jsonData.oauthPassThru || false} onChange={onChangeSwitch}/>
             {!options.jsonData.oauthPassThru &&
                 <FormField label={"API Key"}
                            labelWidth={15}
