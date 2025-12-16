@@ -31,17 +31,6 @@
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },
-  "routes": [
-    {
-      "url": "{{.JsonData.url}}",
-      "headers": [
-        {
-          "name": "X-API-Key",
-          "content": "{{.SecureJsonData.apiKey}}"
-        }
-      ]
-    }
-  ],
   "dependencies": {
     "grafanaVersion": "7.5.x",
     "plugins": [],
