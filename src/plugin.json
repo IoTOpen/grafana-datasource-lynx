@@ -33,11 +33,12 @@
   },
   "routes": [
     {
-      "url": "{{.JsonData.url}}",
+      "path": "iotopen",
+      "url": "{{ .JsonData.url }}",
       "headers": [
         {
           "name": "X-API-Key",
-          "content": "{{.SecureJsonData.apiKey}}"
+          "content": "{{ .SecureJsonData.apiKey }}"
         }
       ]
     }

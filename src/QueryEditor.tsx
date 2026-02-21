@@ -39,9 +39,11 @@ export const QueryEditor = ({ onChange, query, onRunQuery, datasource }: Props) 
             if (tmpInstallation === undefined && installations.length === 0) {
                 tmpInstallation = { id: 0, name: 'No installations available', client_id: 0 };
             }
+
             if (tmpInstallation === undefined && installations.length > 0) {
                 tmpInstallation = installations[0];
             }
+
             setSelectedInstallation(tmpInstallation!);
             setInstallations(installations);
         }).finally(() => {
@@ -53,7 +55,9 @@ export const QueryEditor = ({ onChange, query, onRunQuery, datasource }: Props) 
         if (selectedInstallation.id === 0) {
             return
         }
+
         setLoadingFunctions(true);
+
         datasource.fetchFunctions(Number(selectedInstallation.id)).then(functions => {
             setFunctions(functions);
             onRunQueryTimed();
