@@ -29,15 +29,16 @@
         ],
         "screenshots": [],
         "version": "3.2.0",
-        "updated": "2025-04-28"
+        "updated": "2026-02-21"
     },
     "routes": [
         {
-            "url": "{{.JsonData.url}}",
+            "path": "iotopen",
+            "url": "{{ .JsonData.url }}",
             "headers": [
                 {
                     "name": "X-API-Key",
-                    "content": "{{.SecureJsonData.apiKey}}"
+                    "content": "{{ .SecureJsonData.apiKey }}"
                 }
             ]
         }
