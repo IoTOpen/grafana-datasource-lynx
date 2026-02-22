@@ -1,18 +1,15 @@
-import { MyQuery } from "../types";
-import {
-    VerticalGroup,
-    HorizontalGroup,
-} from "@grafana/ui";
-import React, { FormEvent } from "react";
-import { LabeledSwitch } from "./form/LabeledSwitch";
-import { FormField } from "./form/FormField";
+import {Query} from "../types";
+import {HorizontalGroup, VerticalGroup,} from "@grafana/ui";
+import React, {FormEvent} from "react";
+import {LabeledSwitch} from "./form/LabeledSwitch";
+import {FormField} from "./form/FormField";
 
 export interface TweakSettingsProps {
-    query: MyQuery;
+    query: Query;
 
-    onChange (query: MyQuery): void;
+    onChange(query: Query): void;
 
-    onRunQuery (): void;
+    onRunQuery(): void;
 }
 
 const tooltipGroupBy = (
@@ -23,7 +20,7 @@ const tooltipGroupBy = (
 const tooltipNameBy = (
     <>
         This will name series based on some meta key.
-        <br />
+        <br/>
         Defaults to <code>name</code>.
     </>
 );
@@ -33,38 +30,38 @@ const tooltipMessageFrom = (
         msg
         field will be overwritten by messages matching this type, linked through <code>device_id</code> meta key.
         Useful
-        for eg. joining positional data. <br />
+        for eg. joining positional data. <br/>
         This field is only applied on table data.
     </>
 );
 
-export const TweakSettings = ({ query, onChange, onRunQuery }: TweakSettingsProps) => {
+export const TweakSettings = ({query, onChange, onRunQuery}: TweakSettingsProps) => {
 
     const onGroupByChange = (event: FormEvent<HTMLInputElement>) => {
-        onChange({ ...query, groupBy: event.currentTarget.value });
+        onChange({...query, groupBy: event.currentTarget.value});
         onRunQuery();
     }
 
     const onNameByChange = (event: FormEvent<HTMLInputElement>) => {
-        onChange({ ...query, nameBy: event.currentTarget.value });
+        onChange({...query, nameBy: event.currentTarget.value});
         onRunQuery();
     }
 
     const onMessageChange = (event: FormEvent<HTMLInputElement>) => {
-        onChange({ ...query, messageFrom: event.currentTarget.value });
+        onChange({...query, messageFrom: event.currentTarget.value});
         onRunQuery();
     }
 
     const onLinkChange = (event: FormEvent<HTMLInputElement>) => {
-        onChange({ ...query, linkKey: event.currentTarget.value });
+        onChange({...query, linkKey: event.currentTarget.value});
         onRunQuery();
     }
     const onSwitchChange = (event: FormEvent<HTMLInputElement>) => {
-        onChange({ ...query, [event.currentTarget.name]: event.currentTarget.checked });
+        onChange({...query, [event.currentTarget.name]: event.currentTarget.checked});
         onRunQuery();
     }
     const onMetaAsLabelsChange = (event: FormEvent<HTMLInputElement>) => {
-        onChange({ ...query, [event.currentTarget.name]: event.currentTarget.checked });
+        onChange({...query, [event.currentTarget.name]: event.currentTarget.checked});
         onRunQuery();
     }
 
@@ -91,7 +88,7 @@ export const TweakSettings = ({ query, onChange, onRunQuery }: TweakSettingsProp
                 />
                 <HorizontalGroup align={"flex-start"} spacing={"xs"}>
                     <LabeledSwitch label={"As table data"} value={query.tabledata} name={"tabledata"}
-                        onChange={onSwitchChange} labelWidth={16} />
+                                   onChange={onSwitchChange} labelWidth={16}/>
                     {query.tabledata && <VerticalGroup spacing={"xs"} align={"flex-start"}>
                         <FormField
                             placeholder={'eg. latitude'}
@@ -102,20 +99,23 @@ export const TweakSettings = ({ query, onChange, onRunQuery }: TweakSettingsProp
                             value={query.messageFrom}
                             tooltip={tooltipMessageFrom}
                         />
-                        <FormField labelWidth={20} placeholder={'device_id'} name={'linkKey'} label={'Linked with'} onChange={onLinkChange}
-                            value={query.linkKey} />
-                        <LabeledSwitch label={"Meta as fields"} labelWidth={20} value={query.metaAsFields} name={"metaAsFields"}
-                            onChange={onSwitchChange} />
-                        {query.metaAsFields && <LabeledSwitch label={"Add device meta"} labelWidth={20} name={"joinDeviceMeta"}
-                            value={query.joinDeviceMeta} onChange={onSwitchChange} />}
+                        <FormField labelWidth={20} placeholder={'device_id'} name={'linkKey'} label={'Linked with'}
+                                   onChange={onLinkChange}
+                                   value={query.linkKey}/>
+                        <LabeledSwitch label={"Meta as fields"} labelWidth={20} value={query.metaAsFields}
+                                       name={"metaAsFields"}
+                                       onChange={onSwitchChange}/>
+                        {query.metaAsFields &&
+                            <LabeledSwitch label={"Add device meta"} labelWidth={20} name={"joinDeviceMeta"}
+                                           value={query.joinDeviceMeta} onChange={onSwitchChange}/>}
                     </VerticalGroup>
                     }
                 </HorizontalGroup>
 
                 <LabeledSwitch label={"Current state only"} value={query.stateOnly} name={"stateOnly"}
-                    onChange={onSwitchChange} labelWidth={16} />
+                               onChange={onSwitchChange} labelWidth={16}/>
                 <LabeledSwitch label={"Meta as labels"} name={"metaAsLabels"} value={query.metaAsLabels}
-                    onChange={onMetaAsLabelsChange} labelWidth={16} />
+                               onChange={onMetaAsLabelsChange} labelWidth={16}/>
             </VerticalGroup>
         </>
     )
