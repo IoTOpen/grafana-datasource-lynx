@@ -12,7 +12,7 @@ export interface LabeledSwitchProps {
 export const LabeledSwitch = ({label, value, name, onChange, labelWidth = 'auto'}: LabeledSwitchProps) => {
     return (
         <InlineFieldRow>
-            <InlineField label={label} labelWidth={labelWidth} >
+            <InlineField label={label} labelWidth={labelWidth}>
                 <InlineSwitch value={value} name={name} onChange={onChange}/>
             </InlineField>
         </InlineFieldRow>

@@ -1,5 +1,5 @@
 import React, {ChangeEvent, SyntheticEvent, useMemo} from "react";
-import {MetaEntry, MyVariableQuery} from "./types";
+import {MetaEntry, VariableQuery} from "./types";
 import {
     HorizontalGroup,
     InlineField,
@@ -12,8 +12,8 @@ import {MetaEditor} from "./components/MetaEditor";
 import {LabeledSwitch} from "./components/form/LabeledSwitch";
 
 export interface MyVariableEditorProps {
-    query: MyVariableQuery;
-    onChange: (query: MyVariableQuery) => void;
+    query: VariableQuery;
+    onChange: (query: VariableQuery) => void;
 }
 
 export const VariableEditor = ({query, onChange}: MyVariableEditorProps) => {

@@ -2,11 +2,11 @@ import React, {FormEvent} from 'react';
 import {HorizontalGroup, Select} from '@grafana/ui';
 import {SelectableValue} from '@grafana/data';
 import {FormField} from './form/FormField';
-import {MyQuery} from '../types';
+import {Query} from '../types';
 
 interface AggregationSettingsProps {
-    query: MyQuery;
-    onChange: (query: MyQuery) => void;
+    query: Query;
+    onChange: (query: Query) => void;
     onRunQuery: () => void;
 }
 
