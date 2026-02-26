@@ -149,11 +149,9 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 					lastMsg[fn.Meta[queryModel.LinkKey]] = entry.Message
 					continue
 				} else if queryModel.MessageFrom != "" {
-					v, ok := lastMsg[fn.Meta[queryModel.LinkKey]]
-					if !ok {
-						continue
+					if v, ok := lastMsg[fn.Meta[queryModel.LinkKey]]; ok {
+						entry.Message = v
 					}
-					entry.Message = v
 				}
 				group := strconv.FormatInt(fn.ID, 10)
 				if queryModel.GroupBy != "" {
