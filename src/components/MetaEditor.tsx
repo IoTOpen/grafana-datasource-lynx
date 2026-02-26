@@ -6,8 +6,10 @@ import {Button, VerticalGroup} from "@grafana/ui";
 
 export interface MetaEditorProps {
     entries: MetaEntry[];
+
     onUpdate(entries: MetaEntry[]): void;
-    hints?: {[key: string]: string[]};
+
+    hints?: { [key: string]: string[] };
 }
 
 export const MetaEditor = ({entries: ents, onUpdate, hints}: MetaEditorProps) => {
@@ -40,10 +42,12 @@ export const MetaEditor = ({entries: ents, onUpdate, hints}: MetaEditorProps) =>
                         <FilterEntry
                             key={idx}
                             data={value}
-                            onDelete={() => {onMetaDelete(idx)}}
+                            onDelete={() => {
+                                onMetaDelete(idx)
+                            }}
                             onUpdate={(value) => onMetaUpdate(idx, value)}
-                            keys={hints ? Object.keys(hints):[]}
-                            values={hints ? hints[value.key] ?? []:[]}
+                            keys={hints ? Object.keys(hints) : []}
+                            values={hints ? hints[value.key] ?? [] : []}
                         />
                     );
                 })}

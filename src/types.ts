@@ -1,4 +1,4 @@
-import { DataQuery, DataSourceJsonData } from '@grafana/data';
+import {DataQuery, DataSourceJsonData} from '@grafana/data';
 
 
 export interface MetaEntry {
@@ -6,7 +6,7 @@ export interface MetaEntry {
     value: string;
 }
 
-export interface MyVariableQuery {
+export interface VariableQuery {
     queryMode: string;
     installationId: string | number;
     meta: MetaEntry[];
@@ -15,7 +15,7 @@ export interface MyVariableQuery {
     addDeviceMeta: boolean;
 }
 
-export interface MyQuery extends DataQuery {
+export interface Query extends DataQuery {
     installationId: number;
     installationVariable?: string;
     type: string;
@@ -34,37 +34,16 @@ export interface MyQuery extends DataQuery {
 }
 
 
-export const defaultQuery: Partial<MyQuery> = {
+export const defaultQuery: Partial<Query> = {
     installationId: 0,
     type: '',
-    meta: [{ key: 'type', value: '' }],
+    meta: [{key: 'type', value: ''}],
 };
-
-
-export type Meta = { [index: string]: string };
-
-export interface FunctionX {
-    id: number;
-    type: string;
-    meta: Meta;
-}
-
-export interface DeviceX {
-    id: number;
-    type: string;
-    meta: Meta;
-}
-
-export interface Installation {
-    id: number;
-    client_id: number;
-    name: string;
-}
 
 /**
  * These are options configured for each DataSource instance
  */
-export interface MyDataSourceOptions extends DataSourceJsonData {
+export interface DataSourceOptions extends DataSourceJsonData {
     url?: string;
     apiKey?: string;
     oauthPassThru?: boolean;
@@ -72,6 +51,6 @@ export interface MyDataSourceOptions extends DataSourceJsonData {
     timeout?: string;
 }
 
-export interface MySecureJsonData {
+export interface SecureJsonData {
     apiKey?: string;
 }

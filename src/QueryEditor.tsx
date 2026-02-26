@@ -1,43 +1,58 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { DataSource } from './DataSource';
-import { MyQuery, MyDataSourceOptions, Installation, FunctionX, MetaEntry, defaultQuery } from './types';
-import { QueryEditorProps } from '@grafana/data';
-import { InstallationSelector } from "./components/InstallationSelector";
-import { MetaEditor } from "./components/MetaEditor";
-import { TweakSettings } from "./components/TweakSettings";
-import { useBackoffCallback } from "./components/useBackoffCallback";
-import { LabeledSwitch } from "./components/form/LabeledSwitch";
-import { InlineFieldRow } from "@grafana/ui";
-import { VariableSelector } from "./components/VariableSelector";
-import { AggregationSettings } from './components/AggregationSettings';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {DataSource} from './DataSource';
+import {DataSourceOptions, defaultQuery, MetaEntry, Query} from './types';
+import {QueryEditorProps} from '@grafana/data';
+import {InstallationSelector} from "./components/InstallationSelector";
+import {MetaEditor} from "./components/MetaEditor";
+import {TweakSettings} from "./components/TweakSettings";
+import {useBackoffCallback} from "./components/useBackoffCallback";
+import {LabeledSwitch} from "./components/form/LabeledSwitch";
+import {InlineFieldRow} from "@grafana/ui";
+import {VariableSelector} from "./components/VariableSelector";
+import {AggregationSettings} from './components/AggregationSettings';
+import {Functionx, InstallationInfo} from "@iotopen/node-lynx";
 
-type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
+type Props = QueryEditorProps<DataSource, Query, DataSourceOptions>;
 
-export const QueryEditor = ({ onChange, query, onRunQuery, datasource }: Props) => {
-    const [installations, setInstallations] = useState<Installation[]>([])
+export const QueryEditor = ({onChange, query, onRunQuery, datasource}: Props) => {
+    const [installations, setInstallations] = useState<InstallationInfo[]>([])
     const [loadingInstallations, setLoadingInstallations] = useState<boolean>(true)
 
     const squery = useMemo(() => {
         let q = query;
         if (q.installationId === undefined) {
-            q = { ...q, ...defaultQuery };
+            q = {...q, ...defaultQuery};
             onChange(q);
         }
         return q;
     }, [query, onChange])
 
-    const [functions, setFunctions] = useState<FunctionX[]>([])
+    const [functions, setFunctions] = useState<Functionx[]>([])
     const [loadingFunctions, setLoadingFunctions] = useState<boolean>(false)
 
-    const [selectedInstallation, setSelectedInstallation] = useState<Installation>({ id: 0, name: '', client_id: 0 })
+    const [selectedInstallation, setSelectedInstallation] = useState<InstallationInfo>({
+        id: 0,
+        name: '',
+        client_id: 0,
+        capabilities: [],
+        assigned: true,
+        organization_id: 0
+    })
 
     const onRunQueryTimed = useBackoffCallback(onRunQuery, 250);
 
     useEffect(() => {
         datasource.fetchInstallations().then(installations => {
-            let tmpInstallation: Installation | undefined = installations.find(i => i.id === query.installationId);
+            let tmpInstallation: InstallationInfo | undefined = installations.find(i => i.id === query.installationId);
             if (tmpInstallation === undefined && installations.length === 0) {
-                tmpInstallation = { id: 0, name: 'No installations available', client_id: 0 };
+                tmpInstallation = {
+                    id: 0,
+                    name: 'No installations available',
+                    client_id: 0,
+                    capabilities: [],
+                    assigned: true,
+                    organization_id: 0
+                };
             }
 
             if (tmpInstallation === undefined && installations.length > 0) {
@@ -67,14 +82,14 @@ export const QueryEditor = ({ onChange, query, onRunQuery, datasource }: Props) 
     }, [setLoadingFunctions, selectedInstallation, setFunctions, datasource, onRunQueryTimed]);
 
     const onUpdateMeta = useCallback((entries: MetaEntry[]) => {
-        onChange({ ...squery, meta: entries });
+        onChange({...squery, meta: entries});
         onRunQueryTimed();
     }, [onChange, squery, onRunQueryTimed]);
 
     useEffect(() => {
         if (selectedInstallation.id !== 0 &&
             selectedInstallation.id !== squery.installationId) {
-            onChange({ ...squery, installationId: selectedInstallation.id });
+            onChange({...squery, installationId: selectedInstallation.id});
         }
     }, [selectedInstallation, squery, onChange])
 
@@ -101,7 +116,7 @@ export const QueryEditor = ({ onChange, query, onRunQuery, datasource }: Props) 
     }, [functions]);
 
     const setInstallationVariable = (variable?: string) => {
-        onChange({ ...squery, installationVariable: variable });
+        onChange({...squery, installationVariable: variable});
     };
 
     return (
@@ -109,19 +124,19 @@ export const QueryEditor = ({ onChange, query, onRunQuery, datasource }: Props) 
             <InlineFieldRow>
                 {squery.installationVariable === undefined ?
                     <InstallationSelector isLoading={loadingInstallations || loadingFunctions}
-                        installations={installations}
-                        installation={selectedInstallation}
-                        onSelection={setSelectedInstallation} /> :
-                    <VariableSelector value={squery.installationVariable} onSelection={setInstallationVariable} />}
+                                          installations={installations}
+                                          installation={selectedInstallation}
+                                          onSelection={setSelectedInstallation}/> :
+                    <VariableSelector value={squery.installationVariable} onSelection={setInstallationVariable}/>}
 
                 <LabeledSwitch label={"From variable"} name={"useVariable"}
-                    value={squery.installationVariable !== undefined} onChange={(e) => {
-                        if (e.currentTarget.checked) {
-                            setInstallationVariable('');
-                        } else {
-                            setInstallationVariable(undefined);
-                        }
-                    }} />
+                               value={squery.installationVariable !== undefined} onChange={(e) => {
+                    if (e.currentTarget.checked) {
+                        setInstallationVariable('');
+                    } else {
+                        setInstallationVariable(undefined);
+                    }
+                }}/>
             </InlineFieldRow>
             <AggregationSettings
                 query={query}
@@ -129,10 +144,10 @@ export const QueryEditor = ({ onChange, query, onRunQuery, datasource }: Props) 
                 onRunQuery={onRunQuery}
             />
             <MetaEditor entries={squery.meta || []}
-                onUpdate={onUpdateMeta}
-                hints={hints}
+                        onUpdate={onUpdateMeta}
+                        hints={hints}
             />
-            <TweakSettings query={query} onChange={onChange} onRunQuery={onRunQueryTimed} />
+            <TweakSettings query={query} onChange={onChange} onRunQuery={onRunQueryTimed}/>
         </div>
     )
 };

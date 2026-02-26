@@ -1,11 +1,11 @@
 import React, {ChangeEvent, SyntheticEvent, useEffect} from 'react';
-import {MyDataSourceOptions, MySecureJsonData} from './types';
+import {DataSourceOptions, SecureJsonData} from './types';
 import {DataSourcePluginOptionsEditorProps} from '@grafana/data';
 import {Alert, HorizontalGroup, VerticalGroup} from '@grafana/ui';
 import {FormField} from 'components/form/FormField'
 import {LabeledSwitch} from "./components/form/LabeledSwitch";
 
-interface ConfigEditorProps extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions, MySecureJsonData> {
+interface ConfigEditorProps extends DataSourcePluginOptionsEditorProps<DataSourceOptions, SecureJsonData> {
 }
 
 export const ConfigEditor = ({onOptionsChange, options}: ConfigEditorProps) => {

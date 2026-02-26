@@ -1,21 +1,22 @@
 import {DataQueryRequest, DataQueryResponse, DataSourceInstanceSettings, MetricFindValue} from '@grafana/data';
 import {DataSourceWithBackend, getBackendSrv, getTemplateSrv} from '@grafana/runtime';
-import {DeviceX, FunctionX, Installation, Meta, MyDataSourceOptions, MyQuery, MyVariableQuery} from './types';
+import {DataSourceOptions, Query, VariableQuery} from './types';
 import {Observable} from 'rxjs';
 import {toNumber} from "lodash";
+import {Devicex, Functionx, InstallationInfo, Metadata} from "@iotopen/node-lynx";
 
 const datasourceProxyPath = "/iotopen"
 
-export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptions> {
-    private settings: DataSourceInstanceSettings<MyDataSourceOptions>;
+export class DataSource extends DataSourceWithBackend<Query, DataSourceOptions> {
+    private settings: DataSourceInstanceSettings<DataSourceOptions>;
 
-    constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
+    constructor(instanceSettings: DataSourceInstanceSettings<DataSourceOptions>) {
         super(instanceSettings);
         this.settings = instanceSettings;
     }
 
-    async fetchInstallations(): Promise<Installation[]> {
-        const response = await getBackendSrv().fetch<Installation[]>({
+    async fetchInstallations(): Promise<InstallationInfo[]> {
+        const response = await getBackendSrv().fetch<InstallationInfo[]>({
             method: 'GET',
             url: `${this.settings.url}${datasourceProxyPath}/api/v2/installationinfo`
         }).toPromise();
@@ -23,29 +24,29 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
         return response.data;
     }
 
-    async fetchFunctions(installationId: number, meta?: { [key: string]: string }): Promise<FunctionX[]> {
+    async fetchFunctions(installationId: number, meta?: { [key: string]: string }): Promise<Functionx[]> {
         const q = meta ? Object.keys(meta).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(meta[key])}`).join('&') : '';
         const response = await getBackendSrv()
-            .fetch<FunctionX[]>({
+            .fetch<Functionx[]>({
                 method: 'GET',
                 url: `${this.settings.url}${datasourceProxyPath}/api/v2/functionx/${installationId}?${q}`,
             }).toPromise();
 
-        return response.data as FunctionX[];
+        return response.data as Functionx[];
     }
 
-    async fetchDevices(installationId: number, meta?: { [key: string]: string }): Promise<DeviceX[]> {
+    async fetchDevices(installationId: number, meta?: { [key: string]: string }): Promise<Devicex[]> {
         const q = meta ? Object.keys(meta).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(meta[key])}`).join('&') : '';
         const response = await getBackendSrv()
-            .fetch<DeviceX[]>({
+            .fetch<Devicex[]>({
                 method: 'GET',
                 url: `${this.settings.url}${datasourceProxyPath}/api/v2/devicexx/${installationId}?${q}`,
             }).toPromise();
 
-        return response.data as DeviceX[];
+        return response.data as Devicex[];
     }
 
-    query(options: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
+    query(options: DataQueryRequest<Query>): Observable<DataQueryResponse> {
         const templateSrv = getTemplateSrv();
 
         const targets = options.targets.map(value => {
@@ -64,9 +65,8 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
         return super.query({...options, targets});
     }
 
-    joinMeta(deviceMeta: DeviceX, functionMeta: FunctionX): Meta {
-        const res: Meta = {};
-
+    joinMeta(deviceMeta: Devicex, functionMeta: Functionx): Metadata {
+        const res: Metadata = {};
         Object.keys(functionMeta.meta).forEach(key => {
             res[key] = functionMeta.meta[key];
         });
@@ -80,7 +80,7 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
         return res;
     }
 
-    async findMetaQuery(query: MyVariableQuery, options?: any): Promise<MetricFindValue[]> {
+    async findMetaQuery(query: VariableQuery, options?: any): Promise<MetricFindValue[]> {
         if (query.metaKey === '' || query.installationId === '0' || query.installationId === '') {
             return Promise.resolve([]);
         }
@@ -107,7 +107,7 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
             const devices = await this.fetchDevices(id);
 
             const deviceMap = devices.reduce<{
-                [key: string]: DeviceX;
+                [key: string]: Devicex;
             }>((acc, device) => {
                 acc[`${device.id}`] = device;
 
@@ -149,7 +149,7 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
         }, []);
     }
 
-    async metricFindQuery(query: MyVariableQuery, options?: any): Promise<MetricFindValue[]> {
+    async metricFindQuery(query: VariableQuery, options?: any): Promise<MetricFindValue[]> {
         const qt = query.queryMode ? query.queryMode : 'functionMeta';
         switch (qt) {
             case 'installation':
