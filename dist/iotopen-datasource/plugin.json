@@ -1,0 +1,53 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "datasource",
+  "name": "IoTOpen datasource",
+  "id": "iotopen-datasource",
+  "backend": true,
+  "executable": "lynx_datasource_backend",
+  "alerting": true,
+  "metrics": true,
+  "info": {
+    "description": "Fetch data from IoT Open",
+    "author": {
+      "name": "IoTOpen",
+      "url": "https://iotopen.se"
+    },
+    "keywords": [
+      "iot",
+      "datasource"
+    ],
+    "logos": {
+      "small": "img/logo.png",
+      "large": "img/logo.png"
+    },
+    "links": [
+      {
+        "name": "Website",
+        "url": "https://iotopen.se"
+      }
+    ],
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "routes": [
+    {
+      "path": "iotopen",
+      "url": "{{ .JsonData.url }}",
+      "headers": [
+        {
+          "name": "X-API-Key",
+          "content": "{{ .SecureJsonData.apiKey }}"
+        }
+      ]
+    }
+  ],
+  "dependencies": {
+    "grafanaVersion": "7.5.x",
+    "plugins": [],
+    "grafanaDependency": ">=7.5.6"
+  }
+}
+
+

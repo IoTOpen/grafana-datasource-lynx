@@ -156,13 +156,23 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 					lastKey = fmt.Sprintf("%d:%s", fn.InstallationID, linkVal)
 				}
 
+				// preserve original message content to detect message-source entries
+				origMsg := entry.Message
+
 				if queryModel.MessageFrom != "" && fn.Type == queryModel.MessageFrom {
 					// For message-source entries we only store when a valid link exists
 					if lastKey == "" {
 						// Missing link - cannot associate this message; skip
 						continue
 					}
-					lastMsg[lastKey] = entry.Message
+					// Only store lastMsg when this log entry originally carried a message
+					if origMsg == "" {
+						// not a message-source entry; skip storing
+						continue
+					}
+					lastMsg[lastKey] = origMsg
+					// For entries that originate from message-source functions, do not append them
+					// to non-message functions in the same topic iteration.
 					continue
 				} else if queryModel.MessageFrom != "" {
 					// For non-message entries, attempt to lookup a previously seen message
@@ -175,6 +185,12 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 						continue
 					}
 					entry.Message = v
+				}
+
+				// If this entry originally carried a message (i.e. it was a message-source
+				// entry), skip appending it to non-message functions.
+				if queryModel.MessageFrom != "" && origMsg != "" && fn.Type != queryModel.MessageFrom {
+					continue
 				}
 				group := strconv.FormatInt(fn.ID, 10)
 				if queryModel.GroupBy != "" {
