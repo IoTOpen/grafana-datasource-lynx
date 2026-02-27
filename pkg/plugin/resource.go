@@ -105,12 +105,8 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 		return nil, err
 	}
 	if queryModel.MessageFrom != "" {
-		tmpFilter := make(map[string]string, len(filter)+1)
-		for k, v := range filter {
-			tmpFilter[k] = v
-		}
-		tmpFilter["type"] = queryModel.MessageFrom
-		tmpFn, err := instance.client.GetFunctions(queryModel.InstallationID, tmpFilter)
+		filter["type"] = queryModel.MessageFrom
+		tmpFn, err := instance.client.GetFunctions(queryModel.InstallationID, filter)
 		if err != nil {
 			return nil, err
 		}
@@ -149,48 +145,13 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 	for _, entry := range logResult {
 		if matchingFn, ok := logTopicMappings[entry.Topic]; ok {
 			for _, fn := range matchingFn {
-				// Resolve link value and form a stable composite key to avoid collisions
-				var lastKey string
-				linkVal, hasLink := fn.Meta[queryModel.LinkKey]
-				if hasLink && linkVal != "" {
-					lastKey = fmt.Sprintf("%d:%s", fn.InstallationID, linkVal)
-				}
-
-				// preserve original message content to detect message-source entries
-				origMsg := entry.Message
-
 				if queryModel.MessageFrom != "" && fn.Type == queryModel.MessageFrom {
-					// For message-source entries we only store when a valid link exists
-					if lastKey == "" {
-						// Missing link - cannot associate this message; skip
-						continue
-					}
-					// Only store lastMsg when this log entry originally carried a message
-					if origMsg == "" {
-						// not a message-source entry; skip storing
-						continue
-					}
-					lastMsg[lastKey] = origMsg
-					// For entries that originate from message-source functions, do not append them
-					// to non-message functions in the same topic iteration.
+					lastMsg[fn.Meta[queryModel.LinkKey]] = entry.Message
 					continue
 				} else if queryModel.MessageFrom != "" {
-					// For non-message entries, attempt to lookup a previously seen message
-					if lastKey == "" {
-						// No link available to join on
-						continue
+					if v, ok := lastMsg[fn.Meta[queryModel.LinkKey]]; ok {
+						entry.Message = v
 					}
-					v, ok := lastMsg[lastKey]
-					if !ok {
-						continue
-					}
-					entry.Message = v
-				}
-
-				// If this entry originally carried a message (i.e. it was a message-source
-				// entry), skip appending it to non-message functions.
-				if queryModel.MessageFrom != "" && origMsg != "" && fn.Type != queryModel.MessageFrom {
-					continue
 				}
 				group := strconv.FormatInt(fn.ID, 10)
 				if queryModel.GroupBy != "" {
@@ -285,6 +246,49 @@ func createLogTopicMappings(fn []*lynx.Function) map[string][]*lynx.Function {
 		}
 	}
 	return logTopicMappings
+}
+
+// processMessageJoin applies the "messageFrom" mapping: it scans log entries
+// and for functions with type == messageFrom records the last seen message
+// per (installation, linkKey). For other functions sharing the same
+// linkKey+installation, an empty message in a data entry is replaced with
+// the last seen message. Returns a map functionID -> list of messages seen
+// (after mapping) in the order of logResult.
+func processMessageJoin(fn []*lynx.Function, logResult []lynx.LogEntry, linkKey string, messageFrom string) map[int64][]string {
+	// normalize topics (strip prefix)
+	for i := range logResult {
+		t := strings.SplitN(logResult[i].Topic, "/", 2)
+		if len(t) == 2 {
+			logResult[i].Topic = t[1]
+		}
+	}
+	// preserve incoming log order (do not reorder) so mapping follows
+	// the original sequence of messages as produced by the log source.
+	lastMsg := make(map[string]string)
+	res := make(map[int64][]string)
+	mappings := createLogTopicMappings(fn)
+	for _, entry := range logResult {
+		if fns, ok := mappings[entry.Topic]; ok {
+			for _, f := range fns {
+				lk := f.Meta[linkKey]
+				key := fmt.Sprintf("%d:%s", f.InstallationID, lk)
+				if messageFrom != "" && f.Type == messageFrom {
+					lastMsg[key] = entry.Message
+					// do not append source messages
+					continue
+				} else if messageFrom != "" {
+					// require a prior source message to map onto targets
+					v, ok := lastMsg[key]
+					if !ok {
+						continue
+					}
+					entry.Message = v
+				}
+				res[f.ID] = append(res[f.ID], entry.Message)
+			}
+		}
+	}
+	return res
 }
 
 func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []string) ([]lynx.LogEntry, error) {
@@ -400,61 +404,5 @@ func createMetaColumns(queryModel *BackendQueryRequest, deviceMap map[int64]*lyn
 		}
 	}
 	sort.Strings(res)
-	return res
-}
-
-// helper used by tests: simulate messageFrom join logic and collect assigned messages per function ID
-func processMessageJoin(fn []*lynx.Function, logResult []lynx.LogEntry, linkKey string, messageFrom string) map[int64][]string {
-	lastMsg := make(map[string]string)
-	res := make(map[int64][]string)
-	logTopicMappings := createLogTopicMappings(fn)
-
-	for _, entry := range logResult {
-		if matchingFn, ok := logTopicMappings[entry.Topic]; ok {
-			for _, f := range matchingFn {
-				var lastKey string
-				linkVal, hasLink := f.Meta[linkKey]
-				if hasLink && linkVal != "" {
-					lastKey = fmt.Sprintf("%d:%s", f.InstallationID, linkVal)
-				}
-
-				// preserve original message content to detect message-source entries
-				origMsg := entry.Message
-
-				if messageFrom != "" && f.Type == messageFrom {
-					if lastKey == "" {
-						continue
-					}
-					// Only store lastMsg when this log entry originally carried a message
-					if origMsg == "" {
-						// not a message-source entry; skip storing
-						continue
-					}
-					lastMsg[lastKey] = origMsg
-					// For entries that originate from message-source functions, do not append them
-					// to non-message functions in the same topic iteration.
-					continue
-				} else if messageFrom != "" {
-					if lastKey == "" {
-						continue
-					}
-					if v, ok := lastMsg[lastKey]; ok {
-						entry.Message = v
-					} else {
-						continue
-					}
-				}
-
-				// If this entry originally carried a message (i.e. it was a message-source
-				// entry), skip appending it to non-message functions.
-				if messageFrom != "" && origMsg != "" && f.Type != messageFrom {
-					continue
-				}
-
-				// record message for this function (if any)
-				res[f.ID] = append(res[f.ID], entry.Message)
-			}
-		}
-	}
 	return res
 }
