@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"fmt"
 	"sort"
 	"testing"
 
@@ -115,7 +114,7 @@ func Test_resolveJoinedMessage_withProvidedLogData(t *testing.T) {
 
 	t.Log("resolved rows from provided data:")
 	for _, row := range rows {
-		t.Logf(fmt.Sprintf("timestamp=%.3f value=%.0f message=%s", row.timestamp, row.value, row.message))
+		t.Logf("timestamp=%.3f value=%.0f message=%s", row.timestamp, row.value, row.message)
 	}
 }
 
