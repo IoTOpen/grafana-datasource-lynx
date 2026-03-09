@@ -140,16 +140,51 @@ func (instance *LynxDataSourceInstance) queryTableData(queryModel *BackendQueryR
 	if err != nil {
 		return nil, err
 	}
+	return buildTableFrames(queryModel, fn, deviceMap, logTopicMappings, logResult, metaColumns)
+}
+
+func buildTableFrames(queryModel *BackendQueryRequest, fn []*lynx.Function, deviceMap map[int64]*lynx.Device, logTopicMappings map[string][]*lynx.Function, logResult []lynx.LogEntry, metaColumns []string) (data.Frames, error) {
+	// Build an index of `messageFrom` values keyed by (linkKey + timestamp).
+	// Rationale: previously the code only used the last-seen message per link key,
+	// which made the join order-dependent and caused a one-row offset when the
+	// primary stream was processed before the matching `messageFrom` row.
+	// Storing exact timestamp matches allows deterministic same-timestamp joins.
+	messageFromByLinkAndTime := make(map[string]string)
+	if queryModel.MessageFrom != "" {
+		for _, entry := range logResult {
+			matchingFn, ok := logTopicMappings[entry.Topic]
+			if !ok {
+				continue
+			}
+			for _, fn := range matchingFn {
+				if fn.Type != queryModel.MessageFrom {
+					continue
+				}
+				linkValue := fn.Meta[queryModel.LinkKey]
+				if linkValue == "" {
+					continue
+				}
+				messageFromByLinkAndTime[messageJoinKey(linkValue, entry.Timestamp)] = entry.Message
+			}
+		}
+	}
 	lastMsg := make(map[string]string)
 	frames := make(map[string]*data.Frame)
 	for _, entry := range logResult {
 		if matchingFn, ok := logTopicMappings[entry.Topic]; ok {
 			for _, fn := range matchingFn {
 				if queryModel.MessageFrom != "" && fn.Type == queryModel.MessageFrom {
-					lastMsg[fn.Meta[queryModel.LinkKey]] = entry.Message
+					linkValue := fn.Meta[queryModel.LinkKey]
+					if linkValue != "" {
+						lastMsg[linkValue] = entry.Message
+					}
 					continue
 				} else if queryModel.MessageFrom != "" {
-					v, ok := lastMsg[fn.Meta[queryModel.LinkKey]]
+					linkValue := fn.Meta[queryModel.LinkKey]
+					if linkValue == "" {
+						continue
+					}
+					v, ok := resolveJoinedMessage(messageFromByLinkAndTime, lastMsg, linkValue, entry.Timestamp)
 					if !ok {
 						continue
 					}
@@ -276,6 +311,8 @@ func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []s
 					return nil, fmt.Errorf("invalid aggrInterval: %s", err)
 				}
 			}
+			// Request logs in ascending timestamp order. The frame builder assumes
+			// logs are processed in chronological order (older -> newer).
 			logQuery, err := client.V3().Log(request.InstallationID, &lynx.LogOptionsV3{
 				TopicFilter:  topicFilter,
 				From:         from,
@@ -364,4 +401,27 @@ func createMetaColumns(queryModel *BackendQueryRequest, deviceMap map[int64]*lyn
 	}
 	sort.Strings(res)
 	return res
+}
+
+func messageJoinKey(linkValue string, timestamp float64) string {
+	// Create a stable composite key for exact timestamp joins.
+	return fmt.Sprintf("%s|%d", linkValue, timestampToUnixNano(timestamp))
+}
+
+func timestampToUnixNano(ts float64) int64 {
+	// Normalize float timestamps to integer nanoseconds for use in map keys.
+	// We round to microseconds (1e-6) to avoid float rounding noise (tests
+	// previously observed +51ns differences when converting directly to ns).
+	return int64(math.Round(ts*1e6)) * int64(time.Microsecond)
+}
+
+func resolveJoinedMessage(exactByLinkAndTime, lastByLink map[string]string, linkValue string, timestamp float64) (string, bool) {
+	// Prefer exact same-timestamp match (deterministic), fall back to last-known
+	// message for the link if no exact match exists. Returning false signals
+	// the caller to skip the row when no message is available.
+	if v, ok := exactByLinkAndTime[messageJoinKey(linkValue, timestamp)]; ok {
+		return v, true
+	}
+	v, ok := lastByLink[linkValue]
+	return v, ok
 }
