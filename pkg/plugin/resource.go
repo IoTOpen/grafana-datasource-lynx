@@ -253,6 +253,7 @@ func createLogTopicMappings(fn []*lynx.Function) map[string][]*lynx.Function {
 func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []string) ([]lynx.LogEntry, error) {
 	var logResult []lynx.LogEntry
 	var offset int
+
 	if request.StateOnly {
 		status, err := client.Status(request.InstallationID, topicFilter)
 		if err != nil {
@@ -261,44 +262,58 @@ func fetchLog(client *lynx.Client, request *BackendQueryRequest, topicFilter []s
 		for _, entry := range status {
 			logResult = append(logResult, *entry)
 		}
-	} else {
-		sec, dec := math.Modf(request.From)
-		from := time.Unix(int64(sec), int64(dec*(1e9)))
-		sec, dec = math.Modf(request.To)
-		to := time.Unix(int64(sec), int64(dec*(1e9)))
-		for {
-			var interval time.Duration
+		return logResult, nil
+	}
 
-			if request.AggrInterval != "" {
-				var err error
-				interval, err = time.ParseDuration(request.AggrInterval)
-				if err != nil {
-					return nil, fmt.Errorf("invalid aggrInterval: %s", err)
-				}
-			}
-			logQuery, err := client.V3().Log(request.InstallationID, &lynx.LogOptionsV3{
-				TopicFilter:  topicFilter,
-				From:         from,
-				To:           to,
-				Offset:       int64(offset),
-				Order:        lynx.LogOrderAsc,
-				AggrMethod:   request.AggrMethod,
-				AggrInterval: interval,
-			})
+	sec, dec := math.Modf(request.From)
+	from := time.Unix(int64(sec), int64(dec*(1e9)))
+	sec, dec = math.Modf(request.To)
+	to := time.Unix(int64(sec), int64(dec*(1e9)))
+
+	const pageLimit int64 = 1000
+
+	for {
+		opts := &lynx.LogOptionsV3{
+			Limit:       pageLimit,
+			TopicFilter: topicFilter,
+			From:        from,
+			To:          to,
+			Offset:      int64(offset),
+			Order:       lynx.LogOrderAsc,
+			AggrMethod:  request.AggrMethod,
+		}
+
+		if request.AggrInterval != "" {
+			interval, err := time.ParseDuration(request.AggrInterval)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("invalid aggrInterval: %s", err)
 			}
-			for _, x := range logQuery.Data {
-				t := strings.SplitN(x.Topic, "/", 2)
-				if len(t) == 2 {
-					x.Topic = t[1]
-				}
-				logResult = append(logResult, x)
+			opts.AggrInterval = interval
+		}
+
+		logQuery, err := client.V3().Log(request.InstallationID, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, x := range logQuery.Data {
+			t := strings.SplitN(x.Topic, "/", 2)
+			if len(t) == 2 {
+				x.Topic = t[1]
 			}
-			offset += logQuery.Count
+			logResult = append(logResult, x)
+		}
+
+		if logQuery.Count <= 0 {
 			if offset >= int(logQuery.Total) {
 				break
 			}
+			return nil, fmt.Errorf("log pagination stalled: count=%d total=%d offset=%d", logQuery.Count, logQuery.Total, offset)
+		}
+
+		offset += logQuery.Count
+		if offset >= int(logQuery.Total) {
+			break
 		}
 	}
 	return logResult, nil
