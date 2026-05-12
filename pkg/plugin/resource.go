@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"log/slog"
+
 	"github.com/IoTOpen/go-lynx"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
@@ -420,7 +422,17 @@ func fetchLog(ctx context.Context, instance *LynxDataSourceInstance, request *Ba
 	}
 
 	for {
-		logQuery, err := instance.requestLogPage(ctx, request.InstallationID, topicFilter, offset, logPageLimit, request.AggrMethod, request.AggrInterval, request.From, request.To)
+		logQuery, err := instance.requestLogPage(
+			ctx,
+			request.InstallationID,
+			topicFilter,
+			offset,
+			logPageLimit,
+			request.AggrMethod,
+			request.AggrInterval,
+			request.From,
+			request.To,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -495,7 +507,7 @@ func (instance *LynxDataSourceInstance) requestLogPage(
 	}
 	requestURL.RawQuery = query.Encode()
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL.String(), nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL.String(), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("build log request: %w", err)
 	}
@@ -510,7 +522,11 @@ func (instance *LynxDataSourceInstance) requestLogPage(
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer func() {
+		if closeErr := response.Body.Close(); closeErr != nil {
+			slog.Warn("log response body close failed", "error", closeErr)
+		}
+	}()
 
 	if response.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(response.Body)

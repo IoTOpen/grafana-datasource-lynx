@@ -10,29 +10,6 @@ import (
 	"github.com/IoTOpen/go-lynx"
 )
 
-type fakeLogClient struct {
-	pages []*lynx.V3Log
-	calls []*lynx.LogOptionsV3
-}
-
-func (c *fakeLogClient) Status(_ int64, _ []string) (lynx.Status, error) {
-	return nil, nil
-}
-
-func (c *fakeLogClient) Log(_ int64, opts *lynx.LogOptionsV3) (*lynx.V3Log, error) {
-	copied := *opts
-	c.calls = append(c.calls, &copied)
-
-	if len(c.pages) == 0 {
-		return &lynx.V3Log{}, nil
-	}
-
-	page := c.pages[0]
-	c.pages = c.pages[1:]
-
-	return page, nil
-}
-
 func Test_resolveJoinedMessage_withProvidedLogData(t *testing.T) {
 	t.Parallel()
 
