@@ -23,14 +23,15 @@ type (
 
 	// LynxDataSourceInstance handles plugin instances
 	LynxDataSourceInstance struct {
-		client  *lynx.Client
-		Timeout time.Duration
-		options Settings
+		client      *lynx.Client
+		Timeout     time.Duration
+		options     Settings
+		bearerToken string
 	}
 )
 
 // NewDatasourceInstance create a new LynxDatasourceInstance
-func NewDatasourceInstance(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+func NewDatasourceInstance(_ context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	instance := &LynxDataSourceInstance{}
 	if err := json.Unmarshal(settings.JSONData, &instance.options); err != nil {
 		return nil, err
@@ -48,8 +49,9 @@ func NewDatasourceInstance(ctx context.Context, settings backend.DataSourceInsta
 		}
 	}
 	instance.Timeout = timeout
+	instance.bearerToken = ""
 	instance.client = lynx.NewClient(&lynx.Options{
-		Authenticator: lynx.AuthApiKey{Key: instance.options.APIKey},
+		Authenticator: lynx.AuthAPIKey{Key: instance.options.APIKey},
 		APIBase:       instance.options.URL,
 		HTTPClient: &http.Client{
 			Timeout: timeout,
@@ -62,7 +64,7 @@ func (instance *LynxDataSourceInstance) Dispose() {
 }
 
 // QueryData handler for data queries
-func (instance *LynxDataSourceInstance) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+func (instance *LynxDataSourceInstance) QueryData(_ context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	response := backend.NewQueryDataResponse()
 	var usedInstance = instance
 	if instance.options.OAuth2Passthru {
@@ -80,6 +82,9 @@ func (instance *LynxDataSourceInstance) QueryData(ctx context.Context, req *back
 					Timeout: instance.Timeout,
 				},
 			}),
+			Timeout:     instance.Timeout,
+			options:     instance.options,
+			bearerToken: parts[1],
 		}
 	}
 	for _, q := range req.Queries {
@@ -89,7 +94,7 @@ func (instance *LynxDataSourceInstance) QueryData(ctx context.Context, req *back
 }
 
 // CheckHealth checks if everything is up and running properly
-func (instance *LynxDataSourceInstance) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+func (instance *LynxDataSourceInstance) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	res := &backend.CheckHealthResult{
 		Status: backend.HealthStatusOk,
 	}
@@ -109,6 +114,9 @@ func (instance *LynxDataSourceInstance) CheckHealth(ctx context.Context, req *ba
 					Timeout: instance.Timeout,
 				},
 			}),
+			Timeout:     instance.Timeout,
+			options:     instance.options,
+			bearerToken: parts[1],
 		}
 	}
 	if me, err := usedInstance.client.Me(); err != nil {
