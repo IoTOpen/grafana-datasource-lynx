@@ -69,7 +69,7 @@ export const ConfigEditor = ({onOptionsChange, options}: ConfigEditorProps) => {
                                value={options.jsonData.oauthPassThru || false} onChange={onChangeSwitch}/>
             </HorizontalGroup>
             <FormField label={"Timeout"}
-                       value={options.jsonData.timeout || '5s'}
+                       value={options.jsonData.timeout || '30s'}
                        name={"timeout"}
                        placeholder={"HTTP Header timeout"}
                        onChange={onChangeText}

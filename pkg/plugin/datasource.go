@@ -40,7 +40,7 @@ func NewDatasourceInstance(_ context.Context, settings backend.DataSourceInstanc
 		instance.options.APIKey = settings.DecryptedSecureJSONData["apiKey"]
 	}
 
-	timeout := time.Second * 5
+	timeout := time.Second * 30
 	if instance.options.Timeout != "" {
 		if t, err := time.ParseDuration(instance.options.Timeout); err == nil {
 			timeout = t

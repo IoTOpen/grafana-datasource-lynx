@@ -300,7 +300,7 @@ func Test_timestampToUnixNano_handlesFractionalSeconds(t *testing.T) {
 	}
 }
 
-func Test_fetchLog_usesDefaultLargePageLimit(t *testing.T) {
+func Test_fetchLog_usesDefaultRawPageLimit(t *testing.T) {
 	t.Parallel()
 
 	var calls []*http.Request
@@ -319,8 +319,8 @@ func Test_fetchLog_usesDefaultLargePageLimit(t *testing.T) {
 		page := &lynx.V3Log{Total: 0}
 		switch len(calls) {
 		case 1:
-			page.Count = 10000
-			page.Data = make([]lynx.LogEntry, 10000)
+			page.Count = 5000
+			page.Data = make([]lynx.LogEntry, 5000)
 		case 2:
 			page.Count = 100
 			page.Data = make([]lynx.LogEntry, 100)
@@ -355,13 +355,19 @@ func Test_fetchLog_usesDefaultLargePageLimit(t *testing.T) {
 	if got := calls[0].URL.Query().Get("offset"); got != "0" {
 		t.Fatalf("expected first request offset 0, got %q", got)
 	}
-	if got := calls[1].URL.Query().Get("offset"); got != "10000" {
-		t.Fatalf("expected second request offset 10000, got %q", got)
+	if got := calls[1].URL.Query().Get("offset"); got != "5000" {
+		t.Fatalf("expected second request offset 5000, got %q", got)
 	}
-	if got := calls[0].URL.Query().Get("limit"); got != "10000" {
-		t.Fatalf("expected limit 10000, got %q", got)
+	if got := calls[0].URL.Query().Get("limit"); got != "5000" {
+		t.Fatalf("expected limit 5000, got %q", got)
 	}
-	if got := calls[1].URL.Query().Get("limit"); got != "10000" {
-		t.Fatalf("expected limit 10000 on second request, got %q", got)
+	if got := calls[1].URL.Query().Get("limit"); got != "5000" {
+		t.Fatalf("expected limit 5000 on second request, got %q", got)
+	}
+	if got := calls[0].URL.Query().Get("order"); got != "" {
+		t.Fatalf("expected no explicit order, got %q", got)
+	}
+	if got := calls[1].URL.Query().Get("order"); got != "" {
+		t.Fatalf("expected no explicit order on second request, got %q", got)
 	}
 }
