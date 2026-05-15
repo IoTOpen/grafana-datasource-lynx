@@ -20,7 +20,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
-const logPageLimit int64 = 10000
+const logPageLimit int64 = 2000
 
 func (instance *LynxDataSourceInstance) queryTimeSeries(queryModel *BackendQueryRequest) (data.Frames, error) {
 	filter := make(map[string]string, len(queryModel.Meta))
